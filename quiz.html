@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Balance Self-Assessment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-primary: url("background.webp");
+            --bg-secondary: rgba(30, 41, 59, 0.75); 
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border-primary: #475569;
+            --accent-primary: #ef4444;
+            --accent-hover: #dc2626;
+        }
+
+        body {
+            background-image: var(--bg-primary);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: "Inter", "Noto Sans SC", sans-serif;
+            color: var(--text-primary);
+        }
+
+        .main-container {
+            background-color: var(--bg-secondary);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-primary);
+        }
+
+        #loading-screen { 
+            background-image: url('loading.webp');
+            background-size: cover;
+            background-position: center;
+            transition: opacity .45s ease, transform .45s ease;
+            will-change: opacity, transform;
+        }
+        #loading-screen.loading-hidden {
+            opacity: 0;
+            transform: scale(.98);
+            pointer-events: none;
+        }
+
+        #intro-modal {
+            transition: opacity .24s ease;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 9998;
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0,0,0,0.7);
+        }
+        #intro-modal.show {
+            pointer-events: auto;
+            opacity: 1;
+        }
+        #intro-card {
+            background: rgba(11,18,32,0.98);
+            max-width: 720px;
+            width: calc(100% - 2rem);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            transform: scale(.95);
+            transition: transform .24s ease, opacity .24s ease;
+            text-align: center;
+        }
+        #intro-modal.show #intro-card {
+            transform: scale(1);
+        }
+        
+        /* --- NEW: Exit Button Style --- */
+        .exit-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            border: 1px solid var(--border-primary);
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .exit-btn:hover {
+            background-color: #334155;
+            transform: scale(1.05);
+        }
+        
+        .custom-radio input { display: none; }
+        .custom-radio label {
+            display: block; padding: 1.25rem 1.5rem; font-size: 1.125rem; font-weight: 500;
+            border: 2px solid var(--border-primary); border-radius: 0.75rem; cursor: pointer;
+            transition: all 0.2s ease-in-out; background-color: rgba(30, 41, 59, 0.5);
+        }
+        .custom-radio label:hover { border-color: var(--accent-primary); transform: translateY(-2px); }
+        .custom-radio input:checked + label {
+            border-color: var(--accent-primary); background-color: var(--bg-tertiary);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+        }
+
+        .progress-bar { transition: width 1s ease-in-out; }
+        .stepper-item .step-circle { background-color: var(--bg-tertiary); color: var(--text-secondary); }
+        .stepper-item.active .step-circle { background-color: var(--accent-primary); color: white; }
+        .stepper-item.completed .step-circle { background-color: #16a34a; color: white; }
+
+        .question-container { transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; }
+        .question-enter { opacity: 0; transform: translateX(20px); }
+        .question-exit { opacity: 0; transform: translateX(-20px); }
+        
+        .modal-overlay { transition: opacity 0.3s ease; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; }
+        .modal-content { transition: transform 0.3s ease, opacity 0.3s ease; background-color: var(--bg-secondary); color: var(--text-primary); }
+
+        /* --- GAUGE STYLES --- */
+        .gauge-container {
+            width: 250px;
+            height: 125px;
+            position: relative;
+            overflow: hidden;
+            margin: 1rem auto;
+        }
+        .gauge-background, .gauge-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 250px 250px 0 0;
+            box-sizing: border-box;
+        }
+        .gauge-background {
+            background-color: var(--bg-tertiary);
+        }
+        .gauge-fill {
+            background-color: #4ade80; /* Default green */
+            transform-origin: center bottom;
+            transition: background-color 0.5s ease-in-out;
+            transform: rotate(0deg); /* Initial position */
+        }
+        .gauge-fill--healthy { background-color: #4ade80; } /* Green */
+        .gauge-fill--moderate { background-color: #f97316; } /* Orange */
+        .gauge-fill--high { background-color: #ef4444; } /* Red */
+        .gauge-center {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            width: 200px;
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding-bottom: 60px; 
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body class="flex items-start justify-end min-h-screen p-4">
+
+    <header class="absolute top-8 left-8 z-50">
+        <a href="index.html" class="exit-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Exit</span>
+        </a>
+    </header>
+
+    <div id="loading-screen" class="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div class="text-center">
+            <img src="icon.png" alt="Loading" role="status" aria-label="Loading" class="w-20 h-20 mx-auto mb-4 animate-bounce">
+            <div role="status" aria-live="polite" class="text-lg font-semibold" data-translate-key="loading_text">Loading Please Wait...</div>
+        </div>
+    </div>
+
+    <div id="intro-modal" class="hidden" aria-hidden="true">
+        <div id="intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+            <h2 id="intro-title" class="text-2xl font-bold mb-2" data-translate-key="welcome_title"></h2>
+            <p class="text-sm text-[var(--text-secondary)] mb-6" data-translate-key="welcome_subtitle"></p>
+            <div class="flex justify-center">
+                <button id="enter-btn" class="px-6 py-3 rounded-lg bg-[var(--accent-primary)] text-white font-semibold hover:brightness-95 transition" data-translate-key="enter_button"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full max-w-3xl main-container rounded-xl shadow-2xl p-4 sm:p-8 transition-all duration-500 hidden">
+        <div id="app-root">
+             <div id="language-screen" class="text-center">
+                <h1 class="text-3xl font-bold">Choose Language / 选择语言</h1>
+                <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button id="lang-en-btn" class="w-full bg-[var(--accent-primary)] text-white font-bold py-3 px-8 rounded-lg hover:bg-[var(--accent-hover)] transition-colors duration-300 shadow-lg">English</button>
+                    <button id="lang-zh-btn" class="w-full bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors duration-300 shadow-lg">中文 (Chinese)</button>
+                </div>
+            </div>
+
+            <div id="start-screen" class="hidden text-center">
+                <h1 class="text-3xl font-bold" data-translate-key="start_title"></h1>
+                <p class="mt-2 text-[var(--text-secondary)]" data-translate-key="start_subtitle"></p>
+                <button id="start-btn" class="mt-8 w-full sm:w-auto bg-[var(--accent-primary)] text-white font-bold py-3 px-8 rounded-lg hover:bg-[var(--accent-hover)] transition-colors duration-300 shadow-lg" data-translate-key="start_button"></button>
+            </div>
+
+            <div id="quiz-screen" class="hidden">
+                <div id="stepper" class="flex items-center justify-between mb-6"></div>
+                <div id="question-wrapper" class="relative min-h-[480px] sm:min-h-[420px]"></div>
+                <div class="flex justify-between items-center mt-6">
+                    <button id="back-btn" class="bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-bold py-2 px-6 rounded-lg hover:bg-[var(--border-primary)] transition-colors duration-300" data-translate-key="back_button"></button>
+                    <p id="question-count" class="text-sm font-medium text-[var(--text-muted)]"></p>
+                    <button id="next-btn" class="bg-[var(--accent-primary)] text-white font-bold py-2 px-6 rounded-lg hover:bg-[var(--accent-hover)] transition-colors duration-300 shadow-lg disabled:bg-[var(--text-muted)] disabled:cursor-not-allowed" disabled data-translate-key="next_button"></button>
+                </div>
+            </div>
+
+            <div id="results-screen" class="hidden text-center">
+                <div>
+                    <h2 class="text-3xl font-bold mb-4" data-translate-key="results_title"></h2>
+                    
+                    <div id="overall-score-card" class="p-6 rounded-lg mb-6 transition-all duration-500">
+                        <div class="gauge-container">
+                            <div class="gauge-background"></div>
+                            <div class="gauge-fill" id="gauge-fill"></div>
+                            <div class="gauge-center">
+                                <p class="text-sm font-medium text-[var(--text-secondary)]" data-translate-key="results_score_label"></p>
+                                <p id="overall-score" class="text-5xl font-bold">0</p>
+                            </div>
+                        </div>
+                        <p id="overall-interpretation" class="text-xl font-semibold mt-2"></p>
+                    </div>
+
+                    <div id="results-breakdown" class="text-left space-y-6"></div>
+                </div>
+                
+                <div class="mt-8 flex justify-center">
+                    <button id="reset-btn" class="bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-bold py-3 px-8 rounded-lg hover:bg-[var(--border-primary)] transition-colors duration-300" data-translate-key="retake_button"></button>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="text-center pt-8 mt-8 border-t border-[var(--border-primary)]">
+            <p class="text-sm text-[var(--text-muted)]"><span data-translate-key="created_by"></span> Moad Alouane</p>
+            <button id="change-lang-btn" class="text-sm text-[var(--accent-primary)] hover:underline mt-2 hidden" data-translate-key="change_language_button"></button>
+        </footer>
+    </div>
+    
+    <div id="learn-more-modal" class="fixed inset-0 z-50 hidden opacity-0 modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content scale-95 opacity-0 rounded-lg shadow-xl w-full max-w-md p-6 bg-[var(--bg-secondary)] text-[var(--text-primary)]">
+            <h3 id="modal-title" class="text-2xl font-bold mb-4"></h3>
+            <p id="modal-text" class="mb-6 text-[var(--text-secondary)]"></p>
+            <button id="modal-close-btn" class="w-full text-white font-bold py-2 px-4 rounded-lg bg-[var(--accent-primary)]" data-translate-key="got_it_button"></button>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const CLICK_SOUND_SRC = 'click.mp3'; 
+        function playClickSound() {
+            try {
+                const audio = new Audio(CLICK_SOUND_SRC);
+                audio.play().catch(err => console.warn('Click sound play failed:', err));
+            } catch (err) {
+                console.warn('Error creating/playing click audio:', err);
+            }
+        }
+
+        document.body.addEventListener('click', function (e) {
+            const actionable = e.target.closest('button, label, [role="button"], a.exit-btn');
+            if (!actionable || actionable.disabled || actionable.getAttribute('aria-disabled') === 'true') return;
+            playClickSound();
+        });
+    })();
+    </script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        const AppState = {
+            currentLanguage: 'en',
+            currentQuestionIndex: 0,
+            userAnswers: [],
+            quizQuestions: [],
+            riskCounters: { addiction: 0, attention: 0, anxiety: 0 },
+            adaptiveQuestionTriggered: { addiction: false, attention: false, anxiety: false },
+        };
+
+        const Translations = {
+            en: {
+                loading_text: "Loading Please Wait...",
+                welcome_title: "Welcome to the Digital Balance Assessment!",
+                welcome_subtitle: "Take this quick quiz to get a personal score on your digital wellness.",
+                enter_button: "Enter Site",
+                start_title: "Digital Behavior Self-Assessment",
+                start_subtitle: "Answer ~15 questions to understand your digital habits.",
+                start_button: "Start Assessment",
+                back_button: "Back",
+                next_button: "Next",
+                almost_there_button: "Almost There!",
+                results_button: "View Results",
+                question_label: "Question",
+                of_label: "of",
+                results_title: "Your Results",
+                results_score_label: "Balance Score",
+                retake_button: "Retake Quiz",
+                created_by: "Created by",
+                change_language_button: "Change Language",
+                got_it_button: "Got it",
+                interpretations: {
+                    healthy: "Healthy Balance",
+                    moderate: "Moderate Risk",
+                    high: "High Risk"
+                },
+                questionPool: {
+                    addiction: [
+                        { text: "How many hours do you spend online daily for non-work purposes?", icon: '⏰', answers: [{ text: "< 2 hours", score: 0 }, { text: "2-4 hours", score: 5 }, { text: "4-6 hours", score: 8 }, { text: "6+ hours", score: 10 }] },
+                        { text: "How often do you scroll social media without a specific purpose?", icon: '📱', answers: [{ text: "Rarely", score: 0 }, { text: "Sometimes", score: 5 }, { text: "Often", score: 10 }] },
+                        { text: "How often do you use AI tools to complete tasks you could do yourself?", icon: '🤖', answers: [{ text: "Rarely", score: 1 }, { text: "Sometimes", score: 5 }, { text: "Frequently", score: 10 }] },
+                        { text: "If you intentionally leave your phone at home for a few hours, how do you typically feel?", icon: '🏠', answers: [{ text: "Liberated or relieved", score: 0 }, { text: "Neutral, I don't notice", score: 3 }, { text: "Slightly anxious", score: 7 }, { text: "Very anxious and disconnected", score: 10 }] },
+                        { text: "Do you ever lose track of time while online and neglect other responsibilities?", icon: '⏳', answers: [{ text: "Never", score: 0 }, { text: "Rarely", score: 4 }, { text: "Sometimes", score: 8 }, { text: "Often", score: 10 }] },
+                        { text: "Have you ever tried to cut down on your screen time but failed?", icon: '📉', answers: [{ text: "No, I can stop easily", score: 0 }, { text: "I've thought about it", score: 3 }, { text: "Yes, once or twice", score: 7 }, { text: "Yes, multiple times", score: 10 }] },
+                        { text: "How often do you find yourself reaching for your phone the moment you are bored?", icon: '🚶‍♂️', answers: [{ text: "Almost never", score: 1 }, { text: "Sometimes", score: 5 }, { text: "Almost always", score: 10 }] },
+                    ],
+                    attention: [
+                        { text: "How often do you check notifications as soon as they appear?", icon: '🔔', answers: [{ text: "Rarely", score: 0 }, { text: "Sometimes", score: 5 }, { text: "Almost always", score: 10 }] },
+                        { text: "How often does your phone distract you while working or studying?", icon: '📚', answers: [{ text: "Rarely", score: 0 }, { text: "Sometimes", score: 5 }, { text: "Frequently", score: 10 }] },
+                        { text: "When an AI tool gives you an answer, what is your typical reaction?", icon: '💡', answers: [{ text: "I carefully verify it", score: 0 }, { text: "I quickly scan it", score: 4 }, { text: "I trust it and use it", score: 8 }, { text: "I don't question it", score: 10 }] },
+                        { text: "Have you ever thought you felt your phone vibrate, only to find there was nothing there?", icon: '🌀', answers: [{ text: "Never", score: 0 }, { text: "Once or twice", score: 4 }, { text: "Sometimes", score: 7 }, { text: "Yes, this happens often", score: 10 }] },
+                        { text: "Can you watch a full-length movie without checking your phone?", icon: '🎬', answers: [{ text: "Yes, easily", score: 0 }, { text: "It's a struggle", score: 6 }, { text: "No, I always check it", score: 10 }] },
+                        { text: "How often do you switch between different apps or tabs in a single minute?", icon: '🔄', answers: [{ text: "1-2 times", score: 2 }, { text: "3-5 times", score: 6 }, { text: "More than 5 times", score: 10 }] },
+                        { text: "Do you find it difficult to concentrate on a single task without digital distractions?", icon: '🎯', answers: [{ text: "No, I can focus well", score: 0 }, { text: "Sometimes", score: 5 }, { text: "Yes, very often", score: 10 }] },
+                    ],
+                    anxiety: [
+                        { text: "How do you feel when your device's battery is low without a charger nearby?", icon: '🔋', answers: [{ text: "Calm", score: 0 }, { text: "A little uneasy", score: 5 }, { text: "Anxious or panicked", score: 10 }] },
+                        { text: "How often do you feel an urge to check your phone due to 'Fear of Missing Out' (FOMO)?", icon: '😟', answers: [{ text: "Almost never", score: 0 }, { text: "Occasionally", score: 4 }, { text: "Frequently", score: 8 }, { text: "Constantly", score: 10 }] },
+                        { text: "How often do you compare yourself to others on social media?", icon: '🎭', answers: [{ text: "Rarely", score: 1 }, { text: "Sometimes", score: 6 }, { text: "Often", score: 10 }] },
+                        { text: "After a long session on social media, how do you most often feel?", icon: '😔', answers: [{ text: "Refreshed and connected", score: 0 }, { text: "The same as before", score: 3 }, { text: "A little drained or down", score: 7 }, { text: "Anxious or inadequate", score: 10 }] },
+                        { text: "Do you feel pressure to be available online 24/7?", icon: '🌐', answers: [{ text: "Not at all", score: 0 }, { text: "A little", score: 5 }, { text: "Yes, a lot", score: 10 }] },
+                        { text: "Does a slow internet connection make you feel irritable or stressed?", icon: '📶', answers: [{ text: "No, I'm patient", score: 0 }, { text: "Sometimes", score: 5 }, { text: "Yes, very much", score: 9 }] },
+                        { text: "Have you ever lost sleep because you were scrolling on your phone?", icon: '😴', answers: [{ text: "Never", score: 0 }, { text: "Once or twice", score: 5 }, { text: "Yes, frequently", score: 10 }] },
+                    ]
+                },
+                adaptiveQuestions: {
+                    addiction: { text: "You seem to be struggling with controlling your device use. Do you find that it's negatively impacting your relationships or work?", icon: '💔', category: "addiction", answers: [{ text: "No, not at all", score: 1 }, { text: "Maybe a little", score: 6 }, { text: "Yes, significantly", score: 10 }] },
+                    attention: { text: "It appears your focus is often fragmented. Do you feel this constant distraction is reducing the quality of your work or study?", icon: '📉', category: "attention", answers: [{ text: "No, I can still perform well", score: 1 }, { text: "Sometimes, it's harder", score: 6 }, { text: "Yes, my performance has suffered", score: 10 }] },
+                    anxiety: { text: "Your answers suggest a high level of digital anxiety. Do you often feel that being offline makes you miss out on important social events or news?", icon: '📰', category: "anxiety", answers: [{ text: "Rarely, I can disconnect", score: 1 }, { text: "Sometimes I worry", score: 6 }, { text: "Yes, I feel disconnected and anxious", score: 10 }] },
+                },
+                categories: {
+                    addiction: { title: "Addiction Risk", learnMore: "Digital addiction is repetitive device use that undermines daily goals and well-being. Signs include loss of control, preoccupation, and difficulty cutting back. Small structured breaks and habit changes can help regain balance."},
+                    attention: { title: "Attention Fragmentation", learnMore: "Attention fragmentation happens when frequent interruptions and multitasking break your concentration into short fragments. It reduces productivity and increases mental fatigue. Focused work blocks and notification filtering can help restore sustained attention."},
+                    anxiety: { title: "Anxiety Level", learnMore: "Digital-related anxiety includes FOMO, panic when disconnected, and feeling worse after social-comparison. High digital anxiety can affect sleep and mood. Curating feeds and limiting night-time use are practical first steps."}
+                }
+            },
+            zh: { 
+                loading_text: "正在加载请稍候...",
+                welcome_title: "欢迎参加数字平衡评估！",
+                welcome_subtitle: "参加这个快速测验来获得您的数字健康状况的个人分数。",
+                enter_button: "进入网站",
+                start_title: "数字行为自我评估",
+                start_subtitle: "回答约15个问题，了解您的数字习惯。",
+                start_button: "开始评估",
+                back_button: "返回",
+                next_button: "下一个",
+                almost_there_button: "快完成了！",
+                results_button: "查看结果",
+                question_label: "问题",
+                of_label: "之",
+                results_title: "你的结果",
+                results_score_label: "平衡分数",
+                retake_button: "重新评估",
+                created_by: "由",
+                change_language_button: "切换语言",
+                got_it_button: "好的",
+                interpretations: {
+                    healthy: "健康平衡",
+                    moderate: "中度风险",
+                    high: "高度风险"
+                },
+                questionPool: {
+                    addiction: [
+                        { text: "您每天有多少小时用于非工作/学习目的的上网？", icon: '⏰', answers: [{ text: "少于2小时", score: 0 }, { text: "2-4小时", score: 5 }, { text: "4-6小时", score: 8 }, { text: "超过6小时", score: 10 }] },
+                        { text: "您多久会无目的地浏览社交媒体？", icon: '📱', answers: [{ text: "很少", score: 0 }, { text: "有时", score: 5 }, { text: "经常", score: 10 }] },
+                        { text: "您多久使用一次AI工具来完成自己可以做的任务？", icon: '🤖', answers: [{ text: "很少", score: 1 }, { text: "有时", score: 5 }, { text: "经常", score: 10 }] },
+                        { text: "如果您故意将手机放在家里几个小时，您通常感觉如何？", icon: '🏠', answers: [{ text: "解放或轻松", score: 0 }, { text: "没什么感觉", score: 3 }, { text: "有点焦虑", score: 7 }, { text: "非常焦虑和失联", score: 10 }] },
+                        { text: "您是否曾因上网而忘记时间并忽略了其他责任？", icon: '⏳', answers: [{ text: "从未", score: 0 }, { text: "很少", score: 4 }, { text: "有时", score: 8 }, { text: "经常", score: 10 }] },
+                        { text: "您是否曾尝试减少屏幕使用时间但失败了？", icon: '📉', answers: [{ text: "没有，我能轻松停下", score: 0 }, { text: "我考虑过", score: 3 }, { text: "是的，一两次", score: 7 }, { text: "是的，很多次", score: 10 }] },
+                        { text: "您多久会在感到无聊时立即拿起手机？", icon: '🚶‍♂️', answers: [{ text: "几乎没有", score: 1 }, { text: "有时", score: 5 }, { text: "几乎总是", score: 10 }] },
+                    ],
+                    attention: [
+                        { text: "您多久会一收到通知就立即查看？", icon: '🔔', answers: [{ text: "很少", score: 0 }, { text: "有时", score: 5 }, { text: "几乎总是", score: 10 }] },
+                        { text: "在工作或学习时，您的手机多久会分散您的注意力？", icon: '📚', answers: [{ text: "很少", score: 0 }, { text: "有时", score: 5 }, { text: "经常", score: 10 }] },
+                        { text: "当AI工具给您一个答案时，您的典型反应是什么？", icon: '💡', answers: [{ text: "我会用其他来源仔细核实", score: 0 }, { text: "我会快速扫描检查错误", score: 4 }, { text: "我相信并直接使用", score: 8 }, { text: "我从不质疑", score: 10 }] },
+                        { text: "您是否曾感觉手机在振动，结果却什么都没有？", icon: '🌀', answers: [{ text: "从未", score: 0 }, { text: "一两次", score: 4 }, { text: "有时", score: 7 }, { text: "是的，经常发生", score: 10 }] },
+                        { text: "您能看一部完整的电影而不查看手机吗？", icon: '🎬', answers: [{ text: "是的，很容易", score: 0 }, { text: "有点困难", score: 6 }, { text: "不，我总会看", score: 10 }] },
+                        { text: "您在一分钟内切换不同应用或标签页的频率是多少？", icon: '🔄', answers: [{ text: "1-2次", score: 2 }, { text: "3-5次", score: 6 }, { text: "超过5次", score: 10 }] },
+                        { text: "您是否发现在没有数字干扰的情况下很难专注于一项任务？", icon: '🎯', answers: [{ text: "不，我能很好地专注", score: 0 }, { text: "有时", score: 5 }, { text: "是的，非常频繁", score: 10 }] },
+                    ],
+                    anxiety: [
+                        { text: "当您的设备电量不足且附近没有充电器时，您感觉如何？", icon: '🔋', answers: [{ text: "平静", score: 0 }, { text: "有点不安", score: 5 }, { text: "焦虑或恐慌", score: 10 }] },
+                        { text: "您多久会因为“害怕错过”（FOMO）而想查看手机？", icon: '😟', answers: [{ text: "几乎没有", score: 0 }, { text: "偶尔", score: 4 }, { text: "经常", score: 8 }, { text: "总是", score: 10 }] },
+                        { text: "您多久会在社交媒体上与他人比较？", icon: '🎭', answers: [{ text: "很少", score: 1 }, { text: "有时", score: 6 }, { text: "经常", score: 10 }] },
+                        { text: "在长时间使用社交媒体后，您通常感觉如何？", icon: '😔', answers: [{ text: "精神焕发，感觉联系更紧密", score: 0 }, { text: "和以前一样", score: 3 }, { text: "有点疲惫或情绪低落", score: 7 }, { text: "焦虑或感觉自己不够好", score: 10 }] },
+                        { text: "您是否感到必须24/7在线的压力？", icon: '🌐', answers: [{ text: "完全没有", score: 0 }, { text: "有一点", score: 5 }, { text: "是的，很大", score: 10 }] },
+                        { text: "网速慢会让您感到烦躁或压力大吗？", icon: '📶', answers: [{ text: "不，我很有耐心", score: 0 }, { text: "有时", score: 5 }, { text: "是的，非常", score: 9 }] },
+                        { text: "您是否曾因为刷手机而失眠？", icon: '😴', answers: [{ text: "从未", score: 0 }, { text: "一两次", score: 5 }, { text: "是的，经常", score: 10 }] },
+                    ]
+                },
+                adaptiveQuestions: {
+                    addiction: { text: "您似乎在控制设备使用方面有困难。您是否觉得这正在负面影响您的人际关系或工作？", icon: '💔', category: "addiction", answers: [{ text: "完全没有", score: 1 }, { text: "也许有一点", score: 6 }, { text: "是的，影响很大", score: 10 }] },
+                    attention: { text: "您的注意力似乎经常被分散。您是否觉得这种持续的干扰降低了您的工作或学习质量？", icon: '📉', category: "attention", answers: [{ text: "不，我仍然能表现得很好", score: 1 }, { text: "有时会更难", score: 6 }, { text: "是的，我的表现受到了影响", score: 10 }] },
+                    anxiety: { text: "您的回答表明存在较高水平的数字焦虑。您是否经常觉得离线会让您错过重要的社交活动或新闻？", icon: '📰', category: "anxiety", answers: [{ text: "很少，我能断开连接", score: 1 }, { text: "有时我会担心", score: 6 }, { text: "是的，我感到脱节和焦虑", score: 10 }] },
+                },
+                categories: {
+                    addiction: { title: "成瘾风险", learnMore: "数字成瘾是指重复使用设备，损害日常目标和幸福感。迹象包括失控、专注和难以减少使用。小的结构化休息和习惯改变有助于恢复平衡。"},
+                    attention: { title: "注意力碎片化", learnMore: "注意力碎片化是指频繁的打断和多任务处理将您的注意力分解成短片段。它会降低生产力并增加精神疲劳。专注的工作块和通知过滤有助于恢复持续的注意力。"},
+                    anxiety: { title: "焦虑水平", learnMore: "与数字相关的焦虑包括害怕错过（FOMO）、断开连接时的恐慌以及社交比较后感觉更糟。高度的数字焦虑会影响睡眠和情绪。整理您的信息流和限制夜间使用是实用的第一步。"}
+                }
+            }
+        };
+
+        const DOM = {
+            loadingScreen: document.getElementById('loading-screen'),
+            introModal: document.getElementById('intro-modal'),
+            introCard: document.getElementById('intro-card'),
+            enterBtn: document.getElementById('enter-btn'),
+            mainContainer: document.querySelector('.main-container'),
+            appRoot: document.getElementById('app-root'),
+            languageScreen: document.getElementById('language-screen'),
+            startScreen: document.getElementById('start-screen'), quizScreen: document.getElementById('quiz-screen'), resultsScreen: document.getElementById('results-screen'),
+            startBtn: document.getElementById('start-btn'), backBtn: document.getElementById('back-btn'), nextBtn: document.getElementById('next-btn'),
+            questionWrapper: document.getElementById('question-wrapper'), questionCount: document.getElementById('question-count'), stepper: document.getElementById('stepper'),
+            overallScore: document.getElementById('overall-score'), overallInterpretation: document.getElementById('overall-interpretation'), overallScoreCard: document.getElementById('overall-score-card'),
+            gaugeFill: document.getElementById('gauge-fill'),
+            resultsBreakdown: document.getElementById('results-breakdown'),
+            resetBtn: document.getElementById('reset-btn'),
+            learnMoreModal: document.getElementById('learn-more-modal'), modalTitle: document.getElementById('modal-title'),
+            modalText: document.getElementById('modal-text'), modalCloseBtn: document.getElementById('modal-close-btn'),
+            changeLangBtn: document.getElementById('change-lang-btn'),
+            langEnBtn: document.getElementById('lang-en-btn'),
+            langZhBtn: document.getElementById('lang-zh-btn'),
+        };
+        
+        const switchScreen = (screenId) => {
+            ['language-screen', 'start-screen', 'quiz-screen', 'results-screen'].forEach(id => {
+                const el = document.getElementById(id);
+                if (id === screenId) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+        };
+
+        const translateUI = () => {
+             const lang = AppState.currentLanguage;
+            const t = Translations[lang];
+            document.documentElement.lang = lang;
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.dataset.translateKey;
+                if (t && t[key])  el.textContent = t[key];
+            });
+        };
+
+        const setLanguage = (lang) => {
+            AppState.currentLanguage = lang;
+            localStorage.setItem('userLanguage', lang);
+            switchScreen('start-screen');
+            DOM.changeLangBtn.classList.remove('hidden');
+            translateUI();
+        };
+
+        const generateQuiz = () => {
+            const t = Translations[AppState.currentLanguage];
+            const pool = t.questionPool;
+            let selectedQuestions = [];
+
+            for (const category in pool) {
+                const questionsWithCategory = pool[category].map(q => ({ ...q, category }));
+                const shuffled = questionsWithCategory.sort(() => 0.5 - Math.random());
+                selectedQuestions.push(...shuffled.slice(0, 5));
+            }
+            
+            AppState.quizQuestions = selectedQuestions.sort(() => 0.5 - Math.random());
+        };
+
+        const renderQuestion = () => {
+            const t = Translations[AppState.currentLanguage];
+            const currentQ = AppState.quizQuestions[AppState.currentQuestionIndex];
+            if (!currentQ) return;
+
+            const isAnswered = AppState.userAnswers[AppState.currentQuestionIndex] !== undefined;
+            const questionHTML = `<div class="question-container absolute w-full" id="question-${AppState.currentQuestionIndex}"><p class="text-center text-2xl font-bold mb-6">${currentQ.icon} ${currentQ.text}</p><div class="space-y-3 custom-radio">${currentQ.answers.map((ans, ansIndex) => `<div><input type="radio" id="q${ansIndex}" name="answer" value="${ans.score}" ${isAnswered && AppState.userAnswers[AppState.currentQuestionIndex] == ans.score ? 'checked' : ''}><label for="q${ansIndex}">${ans.text}</label></div>`).join('')}</div></div>`;
+            
+            const oldQuestion = DOM.questionWrapper.querySelector('.question-container');
+            if (oldQuestion) {
+                oldQuestion.classList.add('question-exit');
+                setTimeout(() => {
+                    DOM.questionWrapper.innerHTML = questionHTML;
+                    const newQuestion = DOM.questionWrapper.querySelector('.question-container');
+                    newQuestion.classList.add('question-enter');
+                     requestAnimationFrame(() => { newQuestion.classList.remove('question-enter'); });
+                }, 200);
+            } else {
+                DOM.questionWrapper.innerHTML = questionHTML;
+                const newQuestion = DOM.questionWrapper.querySelector('.question-container');
+                newQuestion.classList.add('question-enter');
+                requestAnimationFrame(() => { newQuestion.classList.remove('question-enter'); });
+            }
+
+            const totalQuestions = AppState.quizQuestions.length;
+            DOM.questionCount.textContent = `${t.question_label} ${AppState.currentQuestionIndex + 1} ${t.of_label} ${totalQuestions}`;
+            DOM.backBtn.style.visibility = AppState.currentQuestionIndex === 0 ? 'hidden' : 'visible';
+            
+            if (AppState.currentQuestionIndex === totalQuestions - 1) {
+                DOM.nextBtn.textContent = t.results_button;
+            } else if (AppState.currentQuestionIndex === totalQuestions - 2) {
+                DOM.nextBtn.textContent = t.almost_there_button;
+            } else {
+                DOM.nextBtn.textContent = t.next_button;
+            }
+
+            DOM.nextBtn.disabled = !isAnswered;
+            updateStepper();
+        };
+
+        const updateStepper = () => {
+            const totalQuestions = AppState.quizQuestions.length;
+            let stepperHTML = '';
+            for (let i = 0; i < totalQuestions; i++) {
+                let stateClass = '';
+                if (i < AppState.currentQuestionIndex) stateClass = 'completed';
+                if (i === AppState.currentQuestionIndex) stateClass = 'active';
+                stepperHTML += `<div class="stepper-item flex-1 text-center ${stateClass}"><div class="step-circle w-8 h-8 mx-auto rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-bold flex items-center justify-center text-sm">${i < AppState.currentQuestionIndex ? '✓' : i + 1}</div></div>`;
+                if (i < totalQuestions - 1) {
+                    stepperHTML += `<div class="flex-1 h-1 bg-[var(--border-primary)]"></div>`;
+                }
+            }
+            DOM.stepper.innerHTML = stepperHTML;
+        };
+
+        const renderResults = (results) => {
+            const t = Translations[AppState.currentLanguage];
+            const { overallScore, categoryScores } = results;
+            const interpretation = getOverallInterpretation(overallScore);
+            
+            const interpretationKey = Object.keys(t.interpretations).find(key => t.interpretations[key] === interpretation.text) || 'healthy';
+            DOM.gaugeFill.className = `gauge-fill gauge-fill--${interpretationKey}`;
+            
+            let start = 0;
+            const end = overallScore;
+            const duration = 1500;
+            const increment = end > 0 ? end / (duration / 16) : 0;
+            
+            const counter = setInterval(() => {
+                start += increment;
+                if (start >= end) {
+                    start = end;
+                    clearInterval(counter);
+                }
+                DOM.overallScore.textContent = Math.floor(start);
+                const rotation = start * 1.8;
+                DOM.gaugeFill.style.transform = `rotate(${rotation}deg)`;
+            }, 16);
+            
+            DOM.overallInterpretation.textContent = interpretation.text;
+            DOM.overallScore.className = `text-5xl font-bold ${interpretation.colorClass}`;
+            
+            let breakdownHTML = '';
+            for (const key in categoryScores) {
+                const category = t.categories[key];
+                const score = categoryScores[key];
+                breakdownHTML += `<div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><h3 class="font-semibold">${category.title}</h3><button onclick="openLearnMoreModal('${key}')" class="ml-2 text-[var(--text-muted)] hover:text-[var(--accent-primary)]" aria-label="Learn more about ${category.title}"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg></button></div><span class="font-bold">${score}%</span></div><div class="h-4 w-full bg-[var(--bg-tertiary)] rounded-full"><div class="progress-bar h-4 rounded-full ${getScoreColor(score)}" style="width: 0%;" data-width="${score}%"></div></div></div>`;
+            }
+            DOM.resultsBreakdown.innerHTML = breakdownHTML;
+            
+            setTimeout(() => {
+                document.querySelectorAll('.progress-bar').forEach(bar => {
+                    bar.style.width = bar.dataset.width;
+                });
+            }, 100);
+            
+            switchScreen('results-screen');
+            DOM.overallScore.focus();
+        };
+
+        const openLearnMoreModal = (categoryKey) => {
+            const t = Translations[AppState.currentLanguage];
+            const category = t.categories[categoryKey];
+            DOM.modalTitle.textContent = `${category.title}`;
+            DOM.modalText.textContent = category.learnMore;
+            DOM.learnMoreModal.classList.remove('hidden');
+            setTimeout(() => {
+                DOM.learnMoreModal.classList.remove('opacity-0');
+                DOM.learnMoreModal.querySelector('.modal-content').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        };
+
+        const closeLearnMoreModal = () => {
+            DOM.learnMoreModal.querySelector('.modal-content').classList.add('scale-95', 'opacity-0');
+            DOM.learnMoreModal.classList.add('opacity-0');
+            setTimeout(() => DOM.learnMoreModal.classList.add('hidden'), 300);
+        };
+        
+        const calculateResults = () => {
+            let categoryScores = { addiction: { score: 0, max: 0 }, attention: { score: 0, max: 0 }, anxiety: { score: 0, max: 0 }};
+            AppState.quizQuestions.forEach((q, index) => {
+                const score = AppState.userAnswers[index];
+                if (score === undefined) return;
+                
+                categoryScores[q.category].score += score;
+                const maxScore = Math.max(...q.answers.map(a => a.score));
+                categoryScores[q.category].max += maxScore;
+            });
+
+            const addictionRisk = categoryScores.addiction.max > 0 ? Math.round((categoryScores.addiction.score / categoryScores.addiction.max) * 100) : 0;
+            const attentionRisk = categoryScores.attention.max > 0 ? Math.round((categoryScores.attention.score / categoryScores.attention.max) * 100) : 0;
+            const anxietyRisk = categoryScores.anxiety.max > 0 ? Math.round((categoryScores.anxiety.score / categoryScores.anxiety.max) * 100) : 0;
+            
+            const totalRisk = (addictionRisk + attentionRisk + anxietyRisk) / 3;
+            const overallScore = Math.round(100 - totalRisk);
+            return { overallScore, categoryScores: { addiction: addictionRisk, attention: attentionRisk, anxiety: anxietyRisk }, date: new Date().toISOString() };
+        };
+        
+        const getScoreColor = (score) => {
+            if (score < 40) return 'bg-green-500';
+            if (score < 70) return 'bg-orange-500';
+            return 'bg-red-500';
+        };
+        
+        const getOverallInterpretation = (score) => {
+            const t = Translations[AppState.currentLanguage];
+            if (score >= 70) return { text: t.interpretations.healthy, colorClass: 'text-green-400' };
+            if (score >= 40) return { text: t.interpretations.moderate, colorClass: 'text-orange-400' };
+            return { text: t.interpretations.high, colorClass: 'text-red-400' };
+        };
+        
+        const handleAnswerSelect = (e) => {
+            if (e.target.name === 'answer') {
+                const score = parseInt(e.target.value, 10);
+                AppState.userAnswers[AppState.currentQuestionIndex] = score;
+                DOM.nextBtn.disabled = false;
+
+                const currentQuestion = AppState.quizQuestions[AppState.currentQuestionIndex];
+                const category = currentQuestion.category;
+                if (score >= 7) {
+                    AppState.riskCounters[category]++;
+                }
+                
+                setTimeout(() => handleNext(), 300);
+            }
+        };
+        
+        const handleNext = () => {
+            const currentQuestion = AppState.quizQuestions[AppState.currentQuestionIndex];
+            const category = currentQuestion.category;
+            const RISK_THRESHOLD = 2;
+
+            if (AppState.riskCounters[category] >= RISK_THRESHOLD && !AppState.adaptiveQuestionTriggered[category]) {
+                const adaptiveQ = Translations[AppState.currentLanguage].adaptiveQuestions[category];
+                AppState.quizQuestions.splice(AppState.currentQuestionIndex + 1, 0, adaptiveQ);
+                AppState.adaptiveQuestionTriggered[category] = true;
+            }
+
+            if (AppState.currentQuestionIndex < AppState.quizQuestions.length - 1) {
+                AppState.currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                const results = calculateResults();
+                renderResults(results);
+            }
+        };
+
+        const handleBack = () => {
+            if (AppState.currentQuestionIndex > 0) {
+                AppState.currentQuestionIndex--;
+                renderQuestion();
+            }
+        };
+        
+        const handleReset = () => {
+            AppState.currentQuestionIndex = 0;
+            AppState.userAnswers = [];
+            AppState.quizQuestions = [];
+            AppState.riskCounters = { addiction: 0, attention: 0, anxiety: 0 };
+            AppState.adaptiveQuestionTriggered = { addiction: false, attention: false, anxiety: false };
+            
+            if(DOM.gaugeFill) {
+                DOM.gaugeFill.style.transform = 'rotate(0deg)';
+                DOM.gaugeFill.className = 'gauge-fill';
+            }
+
+            switchScreen('start-screen');
+            translateUI();
+        };
+        
+        const initApp = () => {
+            const savedLang = localStorage.getItem('userLanguage');
+            if (savedLang) {
+                setLanguage(savedLang);
+            } else {
+                switchScreen('language-screen');
+            }
+            
+            DOM.langEnBtn.addEventListener('click', () => setLanguage('en'));
+            DOM.langZhBtn.addEventListener('click', () => setLanguage('zh'));
+            
+            DOM.startBtn.addEventListener('click', () => { 
+                generateQuiz(); 
+                switchScreen('quiz-screen'); 
+                renderQuestion(); 
+            });
+
+            DOM.nextBtn.addEventListener('click', handleNext);
+            DOM.backBtn.addEventListener('click', handleBack);
+            DOM.resetBtn.addEventListener('click', handleReset);
+            DOM.questionWrapper.addEventListener('change', handleAnswerSelect);
+            DOM.modalCloseBtn.addEventListener('click', closeLearnMoreModal);
+            DOM.learnMoreModal.addEventListener('click', (e) => { if (e.target === DOM.learnMoreModal) closeLearnMoreModal(); });
+            DOM.changeLangBtn.addEventListener('click', () => {
+                localStorage.removeItem('userLanguage');
+                window.location.reload();
+            });
+        };
+        
+        const handleLoadingScreen = () => {
+            const loading = DOM.loadingScreen;
+            const introModal = DOM.introModal;
+            const introCard = DOM.introCard;
+            const enterBtn = DOM.enterBtn;
+
+            const defaultLang = localStorage.getItem('userLanguage') || 'en';
+            AppState.currentLanguage = defaultLang;
+            translateUI();
+
+            setTimeout(() => {
+                if (!loading) return;
+                loading.classList.add('loading-hidden');
+                loading.addEventListener('transitionend', function onEnd() {
+                    if (loading) loading.remove();
+                    
+                    if (introModal && introCard) {
+                        introModal.classList.remove('hidden');
+                        setTimeout(() => {
+                            introModal.classList.add('show');
+                            introCard.classList.add('show');
+                            introModal.setAttribute('aria-hidden', 'false');
+                            if (enterBtn) enterBtn.focus();
+                        }, 10);
+                    } else {
+                        DOM.mainContainer.classList.remove('hidden');
+                        initApp();
+                    }
+                }, { once: true });
+            }, 1500);
+
+            if (enterBtn) {
+                enterBtn.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    if (introModal && introCard) {
+                        introModal.classList.remove('show');
+                        introCard.classList.remove('show');
+                        introModal.setAttribute('aria-hidden', 'true');
+                        introModal.addEventListener('transitionend', function rm() {
+                            try { if (introModal) introModal.remove(); } catch(err) {}
+                            DOM.mainContainer.classList.remove('hidden');
+                            initApp();
+                        }, { once: true });
+                    }
+                });
+            } else if (!introModal) {
+                setTimeout(() => {
+                    DOM.mainContainer.classList.remove('hidden');
+                    initApp();
+                }, 1500);
+            }
+        };
+
+        window.openLearnMoreModal = openLearnMoreModal;
+        handleLoadingScreen();
+    });
+    </script>
+</body>
+</html>
