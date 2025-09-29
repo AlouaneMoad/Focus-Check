@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReplyWell Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-primary: url("background.webp");
+            --bg-secondary: rgba(20, 26, 41, 0.75); 
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-primary: #475569;
+            --accent-primary: #84cc16; /* Lime green for a fresh look */
+            --accent-hover: #65a30d;
+        }
+
+        body {
+            background-image: var(--bg-primary);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: "Inter", "Noto Sans SC", sans-serif;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* --- NEW: Loading Screen Styles --- */
+        #loading-screen { 
+            background-image: url('loading.webp');
+            background-size: cover;
+            background-position: center;
+            transition: opacity 0.5s ease;
+        }
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .exit-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            border: 1px solid var(--border-primary);
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .exit-btn:hover {
+            background-color: #334155;
+            transform: scale(1.05);
+        }
+        
+        .main-container, .modal-card {
+            background-color: var(--bg-secondary);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-primary);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .main-container {
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-window {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .message-bubble {
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        .message-bubble.incoming {
+            background-color: #334155;
+            border-bottom-left-radius: 0.25rem;
+            align-self: flex-start;
+        }
+        .message-bubble.outgoing {
+            background-color: var(--accent-primary);
+            color: #1e293b;
+            font-weight: 500;
+            border-bottom-right-radius: 0.25rem;
+            align-self: flex-end;
+        }
+        .message-bubble.feedback {
+            background-color: transparent;
+            border: 2px dashed var(--border-primary);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            align-self: center;
+            max-width: 100%;
+            text-align: center;
+        }
+        
+        .choice-btn {
+            background-color: #334155;
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            text-align: left;
+            transition: all 0.2s ease-in-out;
+        }
+        .choice-btn:hover {
+            border-color: var(--accent-primary);
+            background-color: #475569;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="text-center">
+            <img src="icon.png" alt="Loading Icon" class="w-20 h-20 mx-auto mb-4 animate-bounce">
+            <p class="text-lg font-semibold">Loading Simulator...</p>
+        </div>
+    </div>
+
+    <header class="absolute top-8 left-8 z-50">
+        <a href="index.html" class="exit-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span data-translate-key="exit_button">Exit</span>
+        </a>
+    </header>
+
+    <div id="language-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div class="modal-card text-center">
+            <h1 class="text-2xl font-bold mb-6">Choose Language / 选择语言</h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="lang-en-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors duration-300">English</button>
+                <button id="lang-zh-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300">中文 (Chinese)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-wrapper" class="hidden flex-col items-center">
+        <div id="welcome-screen" class="main-container text-center justify-center items-center">
+            <h1 class="text-3xl font-bold mb-2" data-translate-key="welcome_title"></h1>
+            <p class="text-slate-300 mb-6 max-w-sm" data-translate-key="welcome_subtitle"></p>
+            <button id="start-btn" class="px-8 py-3 font-semibold text-white rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors duration-300" data-translate-key="start_button"></button>
+        </div>
+
+        <div id="simulator-screen" class="main-container hidden">
+            <div id="chat-window" class="chat-window p-2"></div>
+            <div id="choices-container" class="mt-4 flex flex-col gap-2"></div>
+        </div>
+
+        <div id="summary-screen" class="main-container text-center justify-center items-center hidden">
+            <h1 class="text-3xl font-bold mb-2" data-translate-key="summary_title"></h1>
+            <p class="text-slate-300 mb-6 max-w-sm" data-translate-key="summary_subtitle"></p>
+            <button id="practice-again-btn" class="px-8 py-3 font-semibold text-white rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors duration-300" data-translate-key="practice_again_button"></button>
+        </div>
+
+        <footer class="text-center pt-4">
+            <button id="change-lang-btn" class="text-sm text-[var(--accent-primary)] hover:underline" data-translate-key="change_language_button"></button>
+        </footer>
+    </div>
+
+    <script>
+    (function () {
+        const CLICK_SOUND_SRC = 'click.mp3'; 
+        function playClickSound() {
+            try {
+                const audio = new Audio(CLICK_SOUND_SRC);
+                audio.play().catch(err => console.warn('Click sound play failed:', err));
+            } catch (err) {
+                console.warn('Error creating/playing click audio:', err);
+            }
+        }
+
+        document.body.addEventListener('click', function (e) {
+            const actionable = e.target.closest('button, a.exit-btn');
+            if (!actionable || actionable.disabled) return;
+            playClickSound();
+        });
+    })();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const AppState = { currentLanguage: 'en', currentScenarioIndex: 0 };
+
+            const Translations = {
+                en: {
+                    exit_button: "Exit",
+                    welcome_title: "ReplyWell Simulator",
+                    welcome_subtitle: "Practice handling common, high-pressure text messages in a safe space. No real people, no real pressure.",
+                    start_button: "Start First Scenario",
+                    summary_title: "Key Takeaway",
+                    summary_subtitle: "Mindful communication isn't about ignoring people—it's about responding in a way that respects both them and yourself. Setting boundaries is healthy.",
+                    practice_again_button: "Practice Again",
+                    next_scenario_button: "Next Scenario →",
+                    view_summary_button: "View Summary →",
+                    action_text: "You chose to: ",
+                    change_language_button: "切换语言 (Switch Language)",
+                    scenarios: [
+                        { message: "Hey, you there?? I need that report draft now, can you send it?", choices: [
+                            { text: "So sorry for the delay! Yes, on it right now!", feedback: "This works, but always prioritizing others' urgency can lead to burnout." },
+                            { text: "Hey! I'm in the middle of something but I can get that to you in about 15 minutes.", feedback: "Excellent! You acknowledged the request, managed expectations, and protected your own focus." },
+                            { text: "(Ignore the message for now)", feedback: "Ignoring can sometimes create more anxiety for everyone. A quick message to set expectations is often less stressful." }
+                        ]},
+                        { message: "Sorry to bother you so late, but can you just quickly look over these slides for the morning meeting?", choices: [
+                            { text: "No problem, send them over.", feedback: "It's generous to help, but working late can affect your sleep and well-being. Protect your personal time." },
+                            { text: "Hi! I'm actually offline for the evening, but I'll make it the first thing I look at in the morning.", feedback: "A perfect response. You set a clear, polite boundary while still being a team player." },
+                            { text: "I'm already in bed.", feedback: "While honest, this can sometimes come across as a bit blunt. A slightly more formal boundary can be helpful for work." }
+                        ]},
+                        { message: "What are you up to tonight? A few of us are going out.", choices: [
+                            { text: "Nothing, where are you guys going?!", feedback: "It's great to be spontaneous, but always check in with yourself first. Are you joining from excitement or from a fear of missing out?" },
+                            { text: "Sounds fun! I'm staying in tonight to recharge, but have a great time!", feedback: "A wonderful way to decline. You were positive while still prioritizing your own need for rest." },
+                            { text: "(Leave them on read while you decide)", feedback: "This can leave your friends hanging and cause you stress. A quick, honest 'no' is often kinder than a slow, uncertain 'maybe'." }
+                        ]},
+                        { message: "Your friend sends a photo from a lavish vacation: 'Having the most amazing time in Bali! You should've come!'", choices: [
+                            { text: "'Wow, so jealous! Looks incredible!'", feedback: "It's natural to feel a pang of envy. Acknowledging their fun is good, but remember to be mindful of how their highlights affect your own feelings." },
+                            { text: "'Amazing! So happy for you. Hope you're having a wonderful time.'", feedback: "A great, supportive response that celebrates their joy without diminishing your own state. This is a healthy way to react to social media comparison." },
+                            { text: "(Just 'like' the message and don't reply)", feedback: "This is a low-effort response. If you're feeling down, it's okay to disengage, but a short, kind message can be better for the friendship." }
+                        ]},
+                        { message: "From your group project chat: 'Have you started on your part of the research? Or should we just get ChatGPT to write it?'", choices: [
+                            { text: "'Let's just use ChatGPT, it will be faster.'", feedback: "While tempting for speed, over-relying on AI can prevent you from learning. This can increase dependency anxiety in the long run." },
+                            { text: "'I've started my research. We can use AI for ideas or to polish our writing, but we should write the core part ourselves.'", feedback: "This is a balanced and ethical approach. It uses AI as a tool without sacrificing the integrity of your own work and learning." },
+                            { text: "'I don't trust AI for this.'", feedback: "It's wise to be cautious. A more constructive approach might be to suggest specific ways it *can* be used, defining clear boundaries for the team." }
+                        ]},
+                        { message: "You see '20+ unread messages' in your Family Group Chat. The latest is from your aunt: 'Did everyone see the article I sent about the new health scare?'", choices: [
+                            { text: "(Feel stressed and mute the chat)", feedback: "Muting is a valid coping strategy for information overload. However, it can sometimes lead to missing important information." },
+                            { text: "(Skim the messages quickly to see if anything is urgent)", feedback: "A good triage strategy. This allows you to stay informed without getting bogged down in every conversation, managing potential anxiety." },
+                            { text: "Reply to your aunt: 'Thanks for sharing, I'll take a look when I have a moment!'", feedback: "This is a polite and effective way to manage expectations. You acknowledge the message without feeling pressured to engage immediately." }
+                        ]},
+                        { message: "You sent a message asking a friend a question an hour ago. You can see they've read it but haven't replied. What do you do?", choices: [
+                            { text: "(Send a follow-up message: '???')", feedback: "This can come across as impatient or demanding, potentially adding pressure to the other person and creating tension." },
+                            { text: "(Assume they're busy and wait patiently)", feedback: "This is the most mindful choice. People have different communication rhythms. Trusting them to reply when they can reduces anxiety for everyone." },
+                            { text: "(Delete the message)", feedback: "Deleting the message out of anxiety or frustration can lead to miscommunication. It's often better to wait or communicate your needs clearly." }
+                        ]},
+                        { message: "You posted a photo and it's not getting many 'likes'. A friend messages you: 'Bold post! Not worried what people will think?'", choices: [
+                            { text: "'Now I am! Should I delete it?'", feedback: "Relying on others' approval for your self-expression can lead to anxiety. It's okay to be confident in what you choose to share." },
+                            { text: "'Haha, not at all! I liked it, so I posted it.'", feedback: "A confident and healthy response! This shows that your self-worth isn't tied to online metrics, which is key to digital well-being." },
+                            { text: "I guess so. Thanks.", feedback: "This reply is a bit passive. It's an opportunity to assert that you are comfortable with your own post." }
+                        ]},
+                        { message: "A friend replies to your detailed message with just a single '👍' emoji.", choices: [
+                            { text: "(Overthink it: 'Are they mad at me?')", feedback: "It's easy to read negative intent into brief messages. Often, it just means the person is busy. Try to give them the benefit of the doubt." },
+                            { text: "(Reply with '👍')", feedback: "A simple and effective way to acknowledge their acknowledgement without adding unnecessary stress or words." },
+                            { text: "Is everything okay?", feedback: "While caring, asking this can sometimes create pressure. Assume it's just a quick reply unless you have a real reason to be concerned." }
+                        ]},
+                        { message: "Your phone buzzes. Notifications show: '3 Missed Calls from Mom', '15 new messages in Project Group', 'You have a new follower'. What do you check first?", choices: [
+                            { text: "The new follower notification.", feedback: "The lure of social validation is strong, but it's often the least urgent. This is a classic example of attention fragmentation." },
+                            { text: "The missed calls from Mom.", feedback: "A good choice. Prioritizing direct, personal communication from close contacts is often the most important." },
+                            { text: "The project group messages.", feedback: "This is also a valid priority, especially if there's a deadline. The key is to make a conscious choice rather than reacting to the newest notification." }
+                        ]}
+                    ]
+                },
+                zh: {
+                    exit_button: "出口",
+                    welcome_title: "ReplyWell 模拟器",
+                    welcome_subtitle: "在一个安全的环境中，练习处理常见的高压短信。没有真人，没有真正的压力。",
+                    start_button: "开始第一个场景",
+                    summary_title: "核心要点",
+                    summary_subtitle: "正念沟通不是忽视他人，而是以尊重他人和自己的方式回应。设定界限是健康的。",
+                    practice_again_button: "再次练习",
+                    next_scenario_button: "下一个场景 →",
+                    view_summary_button: "查看总结 →",
+                    action_text: "你选择了：",
+                    change_language_button: "Switch to English",
+                    scenarios: [
+                        { message: "嘿，在吗？？我现在就需要那份报告草稿，能发给我吗？", choices: [
+                            { text: "非常抱歉耽搁了！是的，马上就办！", feedback: "这样做可以解决眼前的问题，但总是优先处理别人的紧急事务会导致职业倦怠。" },
+                            { text: "嘿！我正在忙别的事，但大约15分钟后可以发给你。", feedback: "非常棒！你确认了请求，管理了对方的期望，也保护了自己的专注力。" },
+                            { text: "（暂时忽略这条消息）", feedback: "忽略有时会给每个人都带来更多焦虑。一条设定预期的简短消息通常压力更小。" }
+                        ]},
+                        { message: "抱歉这么晚打扰你，但你能快速看一下明天早会要用的幻灯片吗？", choices: [
+                            { text: "没问题，发过来吧。", feedback: "乐于助人是好事，但工作到深夜会影响你的睡眠和健康。要保护好你的个人时间。" },
+                            { text: "你好！我晚上已经下线了，但我明天早上会第一时间查看。", feedback: "一个完美的答复。你礼貌地设定了清晰的界限，同时仍然是一个有团队精神的成员。" },
+                            { text: "我已经上床了。", feedback: "虽然诚实，但这有时可能听起来有点生硬。在工作场合，一个稍微正式一点的界限可能更有帮助。" }
+                        ]},
+                        { message: "今晚有什么安排？我们几个人要出去玩。", choices: [
+                            { text: "没安排，你们要去哪儿？！", feedback: "说走就走很棒，但要先问问自己的内心。你是出于兴奋，还是因为害怕错过（FOMO）？" },
+                            { text: "听起来不错！我今晚打算在家充电，祝你们玩得开心！", feedback: "一种很棒的拒绝方式。你既表达了积极的态度，又优先考虑了自己休息的需求。" },
+                            { text: "（已读不回，先考虑一下）", feedback: "这可能会让你的朋友干等，也给你自己带来压力。一个快速、诚实的“不”通常比一个缓慢、不确定的“也许”更友善。" }
+                        ]},
+                        { message: "你的朋友发来一张奢华的度假照片：'在巴厘岛玩得太开心了！你真该来的！'", choices: [
+                            { text: "'哇，太羡慕了！看起来好棒！'", feedback: "感到一丝嫉妒是正常的。承认他们的快乐是好事，但要注意他们的精彩生活如何影响你自己的感受。" },
+                            { text: "'太棒了！真为你高兴。希望你玩得开心。'", feedback: "一个极好的、支持性的回应，既为他们的快乐庆祝，又没有贬低自己的状态。这是应对社交媒体攀比的健康方式。" },
+                            { text: "（只点赞消息，不回复）", feedback: "这是一个低投入的回应。如果你心情不好，不参与是可以的，但一条简短友好的消息对友谊更好。" }
+                        ]},
+                        { message: "来自你的小组项目聊天：'你开始做你的研究部分了吗？或者我们直接让ChatGPT写？'", choices: [
+                            { text: "'我们用ChatGPT吧，这样更快。'", feedback: "虽然为了速度很诱人，但过度依赖AI会妨碍学习。从长远来看，这会增加依赖焦虑。" },
+                            { text: "'我已经开始我的研究了。我们可以用AI来获取想法或润色文稿，但核心部分应该我们自己写。'", feedback: "这是一个平衡且符合道德的方法。它将AI作为工具使用，而没有牺牲你自己工作和学习的完整性。" },
+                            { text: "'我不信任AI能做这个。'", feedback: "谨慎是明智的。一个更具建设性的方法可能是建议它*可以*被使用的具体方式，为团队定义清晰的界限。" }
+                        ]},
+                        { message: "你在“家庭群聊”中看到'20+条未读消息'。最新一条是阿姨发的：'大家都看到我发的关于新健康恐慌的文章了吗？'", choices: [
+                            { text: "（感到压力，将聊天静音）", feedback: "对于信息过载，静音是一种有效的应对策略。然而，它有时可能导致错过重要信息。" },
+                            { text: "（快速浏览消息，看有没有紧急的事）", feedback: "一个很好的分类策略。这让你能保持信息通畅，而不会陷入每一场对话，从而管理潜在的焦虑。" },
+                            { text: "回复你的阿姨：'谢谢分享，我有空会看的！'", feedback: "这是一种礼貌而有效的方式来管理期望。你确认了消息，而没有感到必须立即参与的压力。" }
+                        ]},
+                        { message: "你一小时前给朋友发消息问了一个问题。你可以看到他们已经读了但没有回复。你该怎么办？", choices: [
+                            { text: "（再发一条消息：'？？？'）", feedback: "这可能会被看作不耐烦或苛刻，可能给对方增加压力并造成紧张关系。" },
+                            { text: "（假设他们很忙，耐心等待）", feedback: "这是最正念的选择。人们有不同的沟通节奏。相信他们能在有空时回复，可以减少每个人的焦虑。" },
+                            { text: "（删除消息）", feedback: "出于焦虑或沮丧而删除消息可能导致沟通不畅。通常最好是等待或清楚地沟通你的需求。" }
+                        ]},
+                        { message: "你刚发了一张照片，但没有得到预期的'赞'。一个朋友给你发消息：'发得很大胆啊！不担心别人怎么想吗？'", choices: [
+                            { text: "'现在我担心了！我应该删掉吗？'", feedback: "依赖他人的批准来表达自己会导致焦虑。对自己选择分享的内容有信心是没问题的。" },
+                            { text: "'哈哈，完全不！我喜欢就发了。'", feedback: "一个自信健康的回应！这表明你的自我价值与在线指标无关，这是数字幸福感的关键。" },
+                            { text: "我想是吧。谢谢。", feedback: "这个回复有点被动。这是一个坚持你对自己帖子的舒适度的机会。" }
+                        ]},
+                        { message: "你的朋友只用一个'👍'表情符号回复了你的详细信息。", choices: [
+                            { text: "（过度思考：'他们是不是生我气了？'）", feedback: "很容易从简短的消息中读出负面意图。通常，这只意味着对方很忙。试着相信他们是善意的。" },
+                            { text: "（回复'👍'）", feedback: "一种简单有效的方式来确认他们的确认，而无需增加不必要的压力或言语。" },
+                            { text: "一切都还好吗？", feedback: "虽然关心，但这样问有时会造成压力。除非你有真正的理由担心，否则就假设这只是一个快速的回复。" }
+                        ]},
+                        { message: "你的手机响了。通知显示：'3个妈妈的未接来电'，'项目组有15条新消息'，'你有一个新粉丝'。你先看哪个？", choices: [
+                            { text: "新粉丝通知。", feedback: "社交认可的诱惑很强烈，但这通常是最不紧急的。这是注意力碎片化的典型例子。" },
+                            { text: "妈妈的未接来电。", feedback: "一个不错的选择。优先处理来自亲密联系人的直接、个人通信通常是最重要的。" },
+                            { text: "项目组的消息。", feedback: "这也是一个合理的优先事项，尤其是在有截止日期的情况下。关键是做出有意识的选择，而不是对最新的通知做出反应。" }
+                        ]}
+                    ]
+                }
+            };
+
+            // --- DOM ELEMENTS ---
+            const loadingScreen = document.getElementById('loading-screen');
+            const languageModal = document.getElementById('language-modal');
+            const appWrapper = document.getElementById('app-wrapper');
+            const langEnBtn = document.getElementById('lang-en-btn');
+            const langZhBtn = document.getElementById('lang-zh-btn');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const simulatorScreen = document.getElementById('simulator-screen');
+            const summaryScreen = document.getElementById('summary-screen');
+            const chatWindow = document.getElementById('chat-window');
+            const choicesContainer = document.getElementById('choices-container');
+            const startBtn = document.getElementById('start-btn');
+            const practiceAgainBtn = document.getElementById('practice-again-btn');
+            const changeLangBtn = document.getElementById('change-lang-btn');
+
+            // --- FUNCTIONS ---
+            function translateUI() {
+                const lang = AppState.currentLanguage;
+                const t = Translations[lang];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-translate-key]').forEach(el => {
+                    const key = el.dataset.translateKey;
+                    if (t[key]) el.textContent = t[key];
+                });
+            }
+
+            function setLanguage(lang) {
+                AppState.currentLanguage = lang;
+                localStorage.setItem('userLanguage', lang);
+                translateUI();
+                languageModal.classList.add('hidden');
+                appWrapper.classList.remove('hidden');
+                showScreen(welcomeScreen);
+            }
+
+            function showLanguageSelection() {
+                appWrapper.classList.add('hidden');
+                languageModal.classList.remove('hidden');
+            }
+            
+            function showScreen(screenToShow) {
+                [welcomeScreen, simulatorScreen, summaryScreen].forEach(screen => {
+                    screen.classList.add('hidden');
+                });
+                screenToShow.classList.remove('hidden');
+            }
+
+            function showOutcome(choiceText, feedbackText) {
+                choicesContainer.innerHTML = ''; 
+
+                if (choiceText.startsWith('(')) {
+                    const actionEl = document.createElement('div');
+                    actionEl.className = 'message-bubble feedback';
+                    actionEl.textContent = `${Translations[AppState.currentLanguage].action_text} ${choiceText.slice(1, -1)}`;
+                    chatWindow.appendChild(actionEl);
+                } else {
+                    const outgoingEl = document.createElement('div');
+                    outgoingEl.className = 'message-bubble outgoing';
+                    outgoingEl.textContent = choiceText;
+                    chatWindow.appendChild(outgoingEl);
+                }
+
+                setTimeout(() => {
+                    const feedbackEl = document.createElement('div');
+                    feedbackEl.className = 'message-bubble feedback';
+                    feedbackEl.textContent = feedbackText;
+                    chatWindow.appendChild(feedbackEl);
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }, 800);
+
+                setTimeout(() => {
+                    const nextButton = document.createElement('button');
+                    nextButton.className = 'choice-btn';
+                    if (AppState.currentScenarioIndex < Translations[AppState.currentLanguage].scenarios.length - 1) {
+                        nextButton.textContent = Translations[AppState.currentLanguage].next_scenario_button;
+                        nextButton.onclick = nextScenario;
+                    } else {
+                        nextButton.textContent = Translations[AppState.currentLanguage].view_summary_button;
+                        nextButton.onclick = showSummary;
+                    }
+                    choicesContainer.appendChild(nextButton);
+                }, 1600);
+            }
+
+            function renderScenario(scenario) {
+                chatWindow.innerHTML = '';
+                choicesContainer.innerHTML = '';
+
+                const incomingEl = document.createElement('div');
+                incomingEl.className = 'message-bubble incoming';
+                incomingEl.textContent = scenario.message;
+                chatWindow.appendChild(incomingEl);
+
+                scenario.choices.forEach(choice => {
+                    const choiceBtn = document.createElement('button');
+                    choiceBtn.className = 'choice-btn';
+                    choiceBtn.textContent = choice.text;
+                    choiceBtn.onclick = () => showOutcome(choice.text, choice.feedback);
+                    choicesContainer.appendChild(choiceBtn);
+                });
+            }
+
+            function nextScenario() {
+                AppState.currentScenarioIndex++;
+                const scenarios = Translations[AppState.currentLanguage].scenarios;
+                renderScenario(scenarios[AppState.currentScenarioIndex]);
+            }
+            
+            function showSummary() {
+                showScreen(summaryScreen);
+            }
+
+            function startSimulator() {
+                AppState.currentScenarioIndex = 0;
+                const scenarios = Translations[AppState.currentLanguage].scenarios;
+                scenarios.sort(() => 0.5 - Math.random());
+                showScreen(simulatorScreen);
+                renderScenario(scenarios[AppState.currentScenarioIndex]);
+            }
+
+            // --- EVENT LISTENERS ---
+            langEnBtn.addEventListener('click', () => setLanguage('en'));
+            langZhBtn.addEventListener('click', () => setLanguage('zh'));
+            changeLangBtn.addEventListener('click', showLanguageSelection);
+            startBtn.addEventListener('click', startSimulator);
+            practiceAgainBtn.addEventListener('click', startSimulator);
+            
+            // --- UPDATED: Initialization with Loading Screen ---
+            function init() {
+                const savedLang = localStorage.getItem('userLanguage');
+                if (savedLang) {
+                    AppState.currentLanguage = savedLang;
+                    translateUI();
+                }
+
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        languageModal.classList.remove('hidden');
+                    }, 500);
+                }, 2000);
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
