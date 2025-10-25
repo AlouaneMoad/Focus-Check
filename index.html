@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#ff3b30" />
     <title>Digitalease</title>
-    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
@@ -120,42 +118,5 @@
         });
     </script>
 
-    <!-- REQUIRED: redirect to hosted URL if WebView isn't at your GitHub Pages hostname
-         and register the service worker so the APK loads the live site -->
-    <script>
-(async function() {
-  try {
-    console.log('DEBUG: cleaning service workers and caches…');
-
-    if ('serviceWorker' in navigator) {
-      // unregister all SWs
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-      console.log('DEBUG: unregistered', regs.length, 'service worker(s)');
-    }
-
-    // clear all caches
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-      console.log('DEBUG: cleared caches:', keys);
-    }
-
-    // small delay to ensure everything cleaned
-    await new Promise(r => setTimeout(r, 300));
-
-    // Force a hard navigation to your hosted URL (bypass any local file)
-    const target = "https://alouanemoad.github.io/Focus-Check/";
-    console.log('DEBUG: navigating to', target);
-    window.location.replace(target);
-  } catch (err) {
-    console.error('DEBUG cleanup failed:', err);
-    // fallback: still try to redirect
-    window.location.replace("https://alouanemoad.github.io/Focus-Check/");
-  }
-})();
-</script>
-
 </body>
 </html>
-
