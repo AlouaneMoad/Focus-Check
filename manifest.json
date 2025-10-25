@@ -2,7 +2,8 @@
   "name": "Digitalease",
   "short_name": "Digitalease",
   "description": "Digitalease — Simple, distraction-free focus timer and session tracker.",
-  "start_url": "./",
+  "start_url": "https://alouanemoad.github.io/Focus-Check/",
+  "scope": "https://alouanemoad.github.io/Focus-Check/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ff3b30",
@@ -18,5 +19,5 @@
       "type": "image/png"
     }
   ],
-  "categories": ["productivity", "education"]
+  "categories": ["productivity","education"]
 }
