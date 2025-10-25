@@ -1,11 +1,21 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "alouanemoad.github",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "alouanemoad.github",
+  "name": "Digitalease",
+  "short_name": "Digitalease",
+  "description": "Digitalease — Simple, distraction-free focus timer and session tracker.",
   "start_url": "/",
-  "theme_color": "#ffffff"
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff3b30",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "512",
+      "type": "image/png"
+    },
+    {
+      "src": "/Digitalease/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
