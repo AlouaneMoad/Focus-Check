@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mindful Break</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-primary: url("background.webp");
+            --bg-secondary: rgba(20, 26, 41, 0.75);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-primary: #475569;
+            --accent-primary: #22d3ee; /* Cyan for a calm, watery feel */
+            --accent-hover: #06b6d4;
+        }
+
+        body {
+            background-image: var(--bg-primary);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: "Inter", "Noto Sans SC", sans-serif;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .main-container, .modal-card {
+            background-color: var(--bg-secondary);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-primary);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .exit-btn {
+            display: flex; align-items: center; gap: 0.5rem; background-color: var(--bg-secondary);
+            padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 600;
+            border: 1px solid var(--border-primary); transition: all 0.2s ease-in-out;
+            text-decoration: none; color: var(--text-primary);
+        }
+        .exit-btn:hover { background-color: #334155; transform: scale(1.05); }
+
+        #start-break-btn {
+            background-color: var(--accent-primary);
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+        }
+        #start-break-btn:hover {
+            background-color: var(--accent-hover);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+        }
+
+        .timer-circle-bg { stroke: var(--border-primary); }
+        .timer-circle-progress {
+            stroke: var(--accent-primary);
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 1s linear;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <header class="absolute top-8 left-8 z-50">
+        <a href="index.html" class="exit-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span data-translate-key="exit_button">Exit</span>
+        </a>
+    </header>
+
+    <div id="language-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div class="modal-card text-center">
+            <h1 class="text-2xl font-bold mb-6">Choose Language / 选择语言</h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="lang-en-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors duration-300">English</button>
+                <button id="lang-zh-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300">中文 (Chinese)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-wrapper" class="hidden flex-col items-center">
+        <div class="main-container text-center flex flex-col items-center justify-center transition-opacity duration-500 min-h-[450px]">
+            <div id="start-screen">
+                <h1 class="text-3xl font-bold mb-2" data-translate-key="welcome_title"></h1>
+                <p class="text-slate-300 mb-8" data-translate-key="welcome_subtitle"></p>
+                <button id="start-break-btn" class="px-8 py-4 text-lg font-semibold text-white rounded-full">
+                    <i class="fa-solid fa-person-walking-arrow-right mr-2"></i>
+                    <span data-translate-key="start_button"></span>
+                </button>
+            </div>
+            <div id="activity-screen" class="hidden">
+                <div class="relative w-48 h-48 mb-6">
+                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                        <circle class="timer-circle-bg" cx="50" cy="50" r="45" stroke-width="8" fill="transparent"></circle>
+                        <circle id="timer-progress" class="timer-circle-progress" cx="50" cy="50" r="45" stroke-width="8" fill="transparent"></circle>
+                    </svg>
+                    <div id="timer-text" class="absolute inset-0 flex items-center justify-center text-5xl font-bold">60</div>
+                </div>
+                <h2 id="activity-title" class="text-2xl font-bold"></h2>
+                <p id="activity-description" class="text-slate-300 mt-2 text-lg"></p>
+            </div>
+        </div>
+        <footer class="text-center pt-4">
+            <button id="change-lang-btn" class="text-sm text-[var(--accent-primary)] hover:underline" data-translate-key="change_language_button"></button>
+        </footer>
+    </div>
+
+    <audio id="finish-sound" src="alarm.mp3" preload="auto"></audio>
+
+    <script>
+    (function () {
+        const CLICK_SOUND_SRC = 'click.mp3'; 
+        function playClickSound() {
+            try { new Audio(CLICK_SOUND_SRC).play().catch(e => {}); } catch (e) {}
+        }
+        document.body.addEventListener('click', e => {
+            if (e.target.closest('button, a.exit-btn')) playClickSound();
+        });
+    })();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const AppState = { currentLanguage: 'en', timerInterval: null };
+            const DURATION = 60;
+
+            const Translations = {
+                en: {
+                    exit_button: "Exit",
+                    welcome_title: "Feeling the Urge to Scroll?",
+                    welcome_subtitle: "Take a quick, structured break instead.",
+                    start_button: "I need a mindful moment",
+                    done_text: "Done!",
+                    change_language_button: "切换语言 (Switch Language)",
+                    activities: [
+                        { title: "Box Breathing", description: "Inhale for 4s, hold for 4s, exhale for 4s, hold for 4s. Repeat." },
+                        { title: "5 Senses Check-in", description: "Notice 5 things you can see, 4 you can feel, 3 you can hear, 2 you can smell, and 1 you can taste." },
+                        { title: "Window Gazing", description: "Look out a window. Find and name 5 different colors you can see." },
+                        { title: "Full-Body Stretch", description: "Stand up and stretch your arms, back, and legs. Reach for the sky, then touch your toes." },
+                        { title: "Mindful Listening", description: "Close your eyes and focus only on the sounds around you, near and far." },
+                        { title: "Hand and Finger Stretch", description: "Gently stretch your fingers, wrists, and forearms—the parts most used for scrolling." },
+                        { title: "Water Break", description: "Get up and slowly drink a glass of water. Focus on the sensation of the water." },
+                        { title: "Gratitude Moment", description: "Think of three specific things you are grateful for right now, big or small." },
+                        { title: "Posture Check", description: "Sit or stand up straight. Roll your shoulders back and unclench your jaw." },
+                        { title: "Tense and Release", description: "Tense all the muscles in your body for 5 seconds, then release completely." },
+                        { title: "Palm Warm-Up", description: "Rub your hands together vigorously for 20 seconds until they're warm." },
+                        { title: "Grounding Feet", description: "Feel your feet on the floor. Wiggle your toes. Notice the solid connection to the ground." },
+                        { title: "Quick Tidy", description: "Organize one small thing on your desk. A tidy space can lead to a tidy mind." },
+                        { title: "Look at Nature", description: "Look at a plant or a picture of nature. Notice the details, shapes, and colors." },
+                        { title: "Silent Observation", description: "Pick an object in the room and just look at it for 60 seconds, as if you've never seen it before." },
+                        { title: "Neck Rolls", description: "Gently roll your head from one side to the other, releasing tension in your neck." },
+                        { title: "Positive Affirmation", description: "Repeat a positive phrase to yourself, such as 'I am calm and in control'." },
+                        { title: "Mindful Sip", description: "If you have a drink, take one slow sip. Notice its temperature, taste, and texture." },
+                        { title: "Shoulder Shrugs", description: "Raise your shoulders up to your ears, hold for a moment, and then let them drop." },
+                        { title: "Doodle Break", description: "Grab a pen and paper and just doodle aimlessly for a minute without any goal." }
+                    ]
+                },
+                zh: {
+                    exit_button: "出口",
+                    welcome_title: "有刷手机的冲动吗？",
+                    welcome_subtitle: "不如来一次短暂而有条理的休息。",
+                    start_button: "我需要一个正念时刻",
+                    done_text: "完成！",
+                    change_language_button: "Switch to English",
+                    activities: [
+                        { title: "方框呼吸法", description: "吸气4秒，屏住呼吸4秒，呼气4秒，再次屏住呼吸4秒。重复此过程。" },
+                        { title: "五感签到", description: "注意5样你能看到的东西，4样你能感觉到的，3样你能听到的，2样你能闻到的，和1样你能尝到的。" },
+                        { title: "凝视窗外", description: "看看窗外。找到并说出5种你能看到的颜色。" },
+                        { title: "全身伸展", description: "站起来，伸展你的手臂、背部和腿。向上伸展，然后触摸你的脚趾。" },
+                        { title: "正念倾听", description: "闭上眼睛，只专注于你周围远近的声音。" },
+                        { title: "手部和手指伸展", description: "轻轻伸展你的手指、手腕和小臂——这些是滑动手机最常用的部位。" },
+                        { title: "喝水休息", description: "站起来，慢慢喝一杯水。专注于喝水的感觉。" },
+        				{ title: "感恩时刻", description: "想出三件你此刻感激的具体事情，无论大小。" },
+        				{ title: "姿势检查", description: "坐直或站直。向后滚动你的肩膀，放松你的下巴。" },
+        				{ title: "紧张与放松", description: "将全身肌肉绷紧5秒钟，然后完全放松。" },
+        				{ title: "搓热手掌", description: "用力搓手20秒，直到手掌变暖。" },
+        				{ title: "双脚着地", description: "感受你的双脚踩在地板上。动动你的脚趾。注意与地面的牢固连接。" },
+        				{ title: "快速整理", description: "整理你桌上的一个小东西。整洁的空间可以带来清晰的思路。" },
+        				{ title: "看看自然", description: "看一株植物或一张自然风景的图片。注意其中的细节、形状和颜色。" },
+        				{ title: "静默观察", description: "选择房间里的一个物体，就像你从未见过它一样，静静地看60秒。" },
+        				{ title: "颈部转动", description: "轻轻地将你的头从一侧滚到另一侧，释放颈部的紧张感。" },
+        				{ title: "积极肯定", description: "对自己重复一句积极的话，例如‘我很平静，一切尽在掌握’。" },
+        				{ title: "正念品尝", description: "如果你有饮料，慢慢地喝一口。注意它的温度、味道和口感。" },
+        				{ title: "耸肩运动", description: "将你的肩膀向上耸到耳朵，保持片刻，然后放下。" },
+                        { title: "涂鸦休息", description: "拿支笔和纸，漫无目的地涂鸦一分钟，不要有任何目标。" }
+                    ]
+                }
+            };
+            
+            const languageModal = document.getElementById('language-modal');
+            const appWrapper = document.getElementById('app-wrapper');
+            const langEnBtn = document.getElementById('lang-en-btn');
+            const langZhBtn = document.getElementById('lang-zh-btn');
+            const startScreen = document.getElementById('start-screen');
+            const activityScreen = document.getElementById('activity-screen');
+            const startBtn = document.getElementById('start-break-btn');
+            const timerText = document.getElementById('timer-text');
+            const timerProgress = document.getElementById('timer-progress');
+            const activityTitle = document.getElementById('activity-title');
+            const activityDescription = document.getElementById('activity-description');
+            const finishSound = document.getElementById('finish-sound');
+            const changeLangBtn = document.getElementById('change-lang-btn');
+
+            const radius = timerProgress.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+            timerProgress.style.strokeDasharray = circumference;
+
+            function setProgress(percent) {
+                const offset = circumference - (percent / 100) * circumference;
+                timerProgress.style.strokeDashoffset = offset;
+            }
+            
+            function startTimer() {
+                let timeLeft = DURATION;
+                timerText.textContent = timeLeft;
+                setProgress(100);
+
+                AppState.timerInterval = setInterval(() => {
+                    timeLeft--;
+                    timerText.textContent = timeLeft;
+                    setProgress((timeLeft / DURATION) * 100);
+
+                    if (timeLeft <= 0) {
+                        clearInterval(AppState.timerInterval);
+                        timerText.textContent = Translations[AppState.currentLanguage].done_text;
+                        finishSound.play();
+                        setTimeout(resetTool, 2000);
+                    }
+                }, 1000);
+            }
+
+            function startBreak() {
+                const activities = Translations[AppState.currentLanguage].activities;
+                const activity = activities[Math.floor(Math.random() * activities.length)];
+                activityTitle.textContent = activity.title;
+                activityDescription.textContent = activity.description;
+                startScreen.classList.add('hidden');
+                activityScreen.classList.remove('hidden');
+                startTimer();
+            }
+            
+            function resetTool() {
+                activityScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                timerText.textContent = DURATION;
+                setProgress(100);
+            }
+
+            function translateUI() {
+                const lang = AppState.currentLanguage;
+                const t = Translations[lang];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-translate-key]').forEach(el => {
+                    const key = el.dataset.translateKey;
+                    const target = el.tagName === 'SPAN' ? el : el.querySelector('span') || el;
+                    if (t[key]) target.textContent = t[key];
+                });
+            }
+
+            function setLanguage(lang) {
+                AppState.currentLanguage = lang;
+                localStorage.setItem('userLanguage', lang);
+                translateUI();
+                languageModal.classList.add('hidden');
+                appWrapper.classList.remove('hidden');
+            }
+
+            function init() {
+                const savedLang = localStorage.getItem('userLanguage');
+                if (savedLang) {
+                    setLanguage(savedLang);
+                } else {
+                    languageModal.classList.remove('hidden');
+                }
+                
+                langEnBtn.addEventListener('click', () => setLanguage('en'));
+                langZhBtn.addEventListener('click', () => setLanguage('zh'));
+                startBtn.addEventListener('click', startBreak);
+                changeLangBtn.addEventListener('click', () => {
+                    appWrapper.classList.add('hidden');
+                    languageModal.classList.remove('hidden');
+                });
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
