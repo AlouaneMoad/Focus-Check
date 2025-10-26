@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mindful Break</title>
+    <link rel="icon" href="logo.png" type="image/x-icon"/>
+    <link rel="shortcut icon" href="logo.png" type="image/x-icon"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -14,10 +16,9 @@
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --border-primary: #475569;
-            --accent-primary: #22d3ee; /* Cyan for a calm, watery feel */
+            --accent-primary: #22d3ee; 
             --accent-hover: #06b6d4;
         }
-
         body {
             background-image: var(--bg-primary);
             background-size: cover;
@@ -28,7 +29,16 @@
             color: var(--text-primary);
             overflow: hidden;
         }
-
+        #loading-screen { 
+            background-image: url('loading.webp');
+            background-size: cover;
+            background-position: center;
+            transition: opacity 0.5s ease;
+        }
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
         .main-container, .modal-card {
             background-color: var(--bg-secondary);
             backdrop-filter: blur(16px);
@@ -39,7 +49,6 @@
             width: 100%;
             max-width: 500px;
         }
-
         .exit-btn {
             display: flex; align-items: center; gap: 0.5rem; background-color: var(--bg-secondary);
             padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 600;
@@ -47,7 +56,6 @@
             text-decoration: none; color: var(--text-primary);
         }
         .exit-btn:hover { background-color: #334155; transform: scale(1.05); }
-
         #start-break-btn {
             background-color: var(--accent-primary);
             transition: all 0.3s ease-in-out;
@@ -58,7 +66,6 @@
             transform: scale(1.05);
             box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
         }
-
         .timer-circle-bg { stroke: var(--border-primary); }
         .timer-circle-progress {
             stroke: var(--accent-primary);
@@ -70,6 +77,13 @@
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="text-center">
+            <img src="icon.png" alt="Loading Icon" class="w-20 h-20 mx-auto mb-4 animate-bounce">
+            <p class="text-lg font-semibold">Loading Mindful Break...</p>
+        </div>
+    </div>
 
     <header class="absolute top-8 left-8 z-50">
         <a href="index.html" class="exit-btn">
@@ -196,6 +210,7 @@
                 }
             };
             
+            const loadingScreen = document.getElementById('loading-screen');
             const languageModal = document.getElementById('language-modal');
             const appWrapper = document.getElementById('app-wrapper');
             const langEnBtn = document.getElementById('lang-en-btn');
@@ -223,12 +238,10 @@
                 let timeLeft = DURATION;
                 timerText.textContent = timeLeft;
                 setProgress(100);
-
                 AppState.timerInterval = setInterval(() => {
                     timeLeft--;
                     timerText.textContent = timeLeft;
                     setProgress((timeLeft / DURATION) * 100);
-
                     if (timeLeft <= 0) {
                         clearInterval(AppState.timerInterval);
                         timerText.textContent = Translations[AppState.currentLanguage].done_text;
@@ -261,8 +274,9 @@
                 document.documentElement.lang = lang;
                 document.querySelectorAll('[data-translate-key]').forEach(el => {
                     const key = el.dataset.translateKey;
-                    const target = el.tagName === 'SPAN' ? el : el.querySelector('span') || el;
-                    if (t[key]) target.textContent = t[key];
+                    if (t[key]) {
+                        el.textContent = t[key];
+                    }
                 });
             }
 
@@ -275,13 +289,6 @@
             }
 
             function init() {
-                const savedLang = localStorage.getItem('userLanguage');
-                if (savedLang) {
-                    setLanguage(savedLang);
-                } else {
-                    languageModal.classList.remove('hidden');
-                }
-                
                 langEnBtn.addEventListener('click', () => setLanguage('en'));
                 langZhBtn.addEventListener('click', () => setLanguage('zh'));
                 startBtn.addEventListener('click', startBreak);
@@ -289,6 +296,19 @@
                     appWrapper.classList.add('hidden');
                     languageModal.classList.remove('hidden');
                 });
+
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none'; 
+                        const savedLang = localStorage.getItem('userLanguage');
+                        if (savedLang) {
+                            setLanguage(savedLang);
+                        } else {
+                            languageModal.classList.remove('hidden');
+                        }
+                    }, 500);
+                }, 1500);
             }
 
             init();

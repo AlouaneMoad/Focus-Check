@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mindful AI Helper</title>
+    <link rel="icon" href="logo.png" type="image/x-icon"/>
+    <link rel="shortcut icon" href="logo.png" type="image/x-icon"/>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         :root {
@@ -24,7 +26,7 @@
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
-            font-family: "Inter", sans-serif;
+            font-family: "Inter", "Noto Sans SC", sans-serif;
             color: var(--text-primary);
             overflow: hidden;
         }
@@ -81,7 +83,6 @@
         #send-btn:hover { background-color: var(--accent-hover); }
         #send-btn:disabled { background-color: #475569; cursor: not-allowed; }
 
-        /* Scrollbar */
         .chat-window::-webkit-scrollbar { width: 8px; }
         .chat-window::-webkit-scrollbar-track { background: transparent; }
         .chat-window::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -97,52 +98,66 @@
         </div>
     </div>
 
+    <!-- NEW: Language Modal -->
+    <div id="language-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div class="modal-card text-center max-w-md">
+            <h1 class="text-2xl font-bold mb-6">Choose Language / 选择语言</h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="lang-en-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors duration-300">English</button>
+                <button id="lang-zh-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300">中文 (Chinese)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
     <div id="api-key-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
         <div class="modal-card text-center max-w-md">
             <i class="fa-solid fa-key text-4xl text-[var(--accent-primary)] mb-4"></i>
-            <h1 class="text-2xl font-bold mb-2">Enter Your API Key</h1>
-            <p class="text-slate-300 mb-6 text-sm">To use the AI Helper, please provide your API key from <a href="https://openrouter.ai/" target="_blank" class="font-semibold text-[var(--accent-primary)] hover:underline">OpenRouter.ai</a>. Your key is saved securely in your browser and never sent anywhere else.</p>
-            <input type="password" id="api-key-input" placeholder="sk-or-..." class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:border-[var(--accent-primary)] mb-4">
-            <button id="save-key-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors duration-300">Save and Start Chatting</button>
+            <h1 class="text-2xl font-bold mb-2" data-translate-key="api_title"></h1>
+            <p class="text-slate-300 mb-6 text-sm" data-translate-key="api_desc"></p>
+            <input type="password" id="api-key-input" class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:border-[var(--accent-primary)] mb-4" data-translate-key="api_placeholder">
+            <button id="save-key-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors duration-300" data-translate-key="api_save_button"></button>
         </div>
     </div>
 
     <header class="absolute top-8 left-8 z-30">
         <a href="index.html" class="exit-btn">
             <i class="fa-solid fa-arrow-left"></i>
-            <span>Exit</span>
+            <span data-translate-key="exit_button">Exit</span>
         </a>
     </header>
 
-    <main id="app-wrapper" class="hidden main-container">
-        <div id="chat-window" class="chat-window p-2">
-             <div class="message-bubble system">
-                <p><i class="fa-solid fa-brain mr-2"></i>You are chatting with <strong>Mindful AI</strong>. Ask for advice on digital wellness, managing screen time, or handling online stress.</p>
+    <!-- NEW: App Wrapper -->
+    <div id="app-wrapper" class="hidden flex-col items-center w-full max-w-4xl">
+        <main id="main-container" class="main-container w-full">
+            <div id="chat-window" class="chat-window p-2">
+                <!-- System message will be injected by JS -->
             </div>
-        </div>
-        <div class="mt-4 pt-4 border-t border-[var(--border-primary)]">
-            <form id="chat-form" class="flex items-center gap-3">
-                <input type="text" id="chat-input" class="flex-grow w-full px-4 py-3 rounded-lg text-white placeholder-slate-400" placeholder="Ask for advice..." autocomplete="off">
-                <button type="submit" id="send-btn" class="flex-shrink-0 w-12 h-12 rounded-full font-semibold text-white transition-colors duration-300 flex items-center justify-center">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-                 <button type="button" id="clear-btn" title="Clear Conversation" class="flex-shrink-0 w-12 h-12 rounded-full font-semibold text-white bg-slate-600 hover:bg-slate-700 transition-colors duration-300 flex items-center justify-center">
-                    <i class="fa-solid fa-eraser"></i>
-                </button>
-            </form>
-        </div>
-    </main>
+            <div class="mt-4 pt-4 border-t border-[var(--border-primary)]">
+                <form id="chat-form" class="flex items-center gap-3">
+                    <input type="text" id="chat-input" class="flex-grow w-full px-4 py-3 rounded-lg text-white placeholder-slate-400" autocomplete="off" data-translate-key="chat_placeholder">
+                    <button type="submit" id="send-btn" class="flex-shrink-0 w-12 h-12 rounded-full font-semibold text-white transition-colors duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                    <button type="button" id="clear-btn" class="flex-shrink-0 w-12 h-12 rounded-full font-semibold text-white bg-slate-600 hover:bg-slate-700 transition-colors duration-300 flex items-center justify-center" data-translate-key="clear_button_title">
+                        <i class="fa-solid fa-eraser"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+        
+        <!-- NEW: Footer -->
+        <footer class="text-center pt-4">
+            <button id="change-lang-btn" class="text-sm text-[var(--accent-primary)] hover:underline" data-translate-key="change_language_button"></button>
+        </footer>
+    </div>
     
     <script>
     (function () {
         const CLICK_SOUND_SRC = 'click.mp3'; 
         function playClickSound() {
-            try {
-                const audio = new Audio(CLICK_SOUND_SRC);
-                audio.play().catch(err => {});
-            } catch (err) {}
+            try { new Audio(CLICK_SOUND_SRC).play().catch(err => {}); } catch (err) {}
         }
-
         document.body.addEventListener('click', function (e) {
             const actionable = e.target.closest('button, a.exit-btn');
             if (!actionable || actionable.disabled) return;
@@ -154,23 +169,117 @@
         document.addEventListener('DOMContentLoaded', () => {
             const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
             const AI_MODEL = 'deepseek/deepseek-chat';
+            
+            const AppState = {
+                currentLanguage: 'en',
+                openRouterApiKey: null,
+                conversationHistory: []
+            };
+
+            const Translations = {
+                en: {
+                    exit_button: "Exit",
+                    api_title: "Enter Your API Key",
+                    api_desc: "To use the AI Helper, please provide your API key from OpenRouter.ai. Your key is saved securely in your browser and never sent anywhere else.",
+                    api_placeholder: "sk-or-...",
+                    api_save_button: "Save and Start Chatting",
+                    system_message_strong: "You are chatting with Mindful AI",
+                    system_message_p: "Ask for advice on digital wellness, managing screen time, or handling online stress.",
+                    chat_placeholder: "Ask for advice...",
+                    clear_button_title: "Clear Conversation",
+                    change_language_button: "切换语言 (Switch Language)",
+                    system_prompt: "You are Mindful-AI, a supportive and non-judgmental assistant from the Digital Wellness Hub. Your purpose is to help users navigate the complexities of their digital lives. Provide calm, practical, and encouraging advice on topics like managing screen time, dealing with information overload, fostering healthy online communication, and reducing digital anxiety. Avoid giving medical advice. Keep your responses concise and easy to understand.",
+                    error_message: "Sorry, something went wrong. Please check your API key or try again.",
+                    typing_message: "Typing..."
+                },
+                zh: {
+                    exit_button: "出口",
+                    api_title: "请输入您的 API 密钥",
+                    api_desc: "要使用 AI 助手，请提供您从 OpenRouter.ai 获取的 API 密钥。您的密钥会安全地保存在您的浏览器中，绝不会发送到任何地方。",
+                    api_placeholder: "sk-or-...",
+                    api_save_button: "保存并开始聊天",
+                    system_message_strong: "您正在与 正念AI 聊天",
+                    system_message_p: "询问有关数字健康的建议、管理屏幕时间或处理在线压力。",
+                    chat_placeholder: "询问建议...",
+                    clear_button_title: "清除对话",
+                    change_language_button: "Switch to English",
+                    system_prompt: "你是“正念AI”，一个来自“数字健康中心”的支持性的、不带评判的助手。你的目的是帮助用户应对数字生活的复杂性。请就管理屏幕时间、处理信息过载、培养健康的在线交流以及减少数字焦虑等主题，提供冷静、实用和鼓励性的建议。避免提供医疗建议。保持回答简洁易懂。",
+                    error_message: "抱歉，出错了。请检查您的 API 密钥或重试。",
+                    typing_message: "正在输入..."
+                }
+            };
 
             // --- DOM ELEMENTS ---
             const loadingScreen = document.getElementById('loading-screen');
+            const languageModal = document.getElementById('language-modal');
             const apiKeyModal = document.getElementById('api-key-modal');
+            const appWrapper = document.getElementById('app-wrapper');
+            
+            const langEnBtn = document.getElementById('lang-en-btn');
+            const langZhBtn = document.getElementById('lang-zh-btn');
+            const changeLangBtn = document.getElementById('change-lang-btn');
+            
             const apiKeyInput = document.getElementById('api-key-input');
             const saveKeyBtn = document.getElementById('save-key-btn');
-            const appWrapper = document.getElementById('app-wrapper');
+            
+            const mainContainer = document.getElementById('main-container');
             const chatWindow = document.getElementById('chat-window');
             const chatForm = document.getElementById('chat-form');
             const chatInput = document.getElementById('chat-input');
             const sendBtn = document.getElementById('send-btn');
             const clearBtn = document.getElementById('clear-btn');
 
-            let apiKey = localStorage.getItem('openRouterApiKey');
-            let conversationHistory = [];
-
             // --- FUNCTIONS ---
+
+            function translateUI() {
+                const lang = AppState.currentLanguage;
+                const t = Translations[lang];
+                if (!t) return;
+
+                document.documentElement.lang = lang;
+                
+                document.querySelectorAll('[data-translate-key]').forEach(el => {
+                    const key = el.dataset.translateKey;
+                    if (t[key]) {
+                        if (el.tagName === 'INPUT') el.placeholder = t[key];
+                        else if (el.tagName === 'BUTTON' && key === 'clear_button_title') el.title = t[key];
+                        else el.textContent = t[key];
+                    }
+                });
+
+                // Translate the system message if it's already rendered
+                const systemMessageStrong = document.querySelector('.message-bubble.system strong');
+                if (systemMessageStrong) systemMessageStrong.textContent = t.system_message_strong;
+                const systemMessageP = document.querySelector('.message-bubble.system span');
+                if (systemMessageP) systemMessageP.textContent = t.system_message_p;
+            }
+
+            function setLanguage(lang) {
+                AppState.currentLanguage = lang;
+                localStorage.setItem('userLanguage', lang);
+                translateUI();
+                languageModal.classList.add('hidden');
+                
+                // Now that language is set, check for API key
+                checkApiKeyAndProceed();
+            }
+
+            function showLanguageSelection() {
+                appWrapper.classList.add('hidden');
+                apiKeyModal.classList.add('hidden');
+                languageModal.classList.remove('hidden');
+            }
+            
+            function checkApiKeyAndProceed() {
+                AppState.openRouterApiKey = localStorage.getItem('openRouterApiKey');
+                if (!AppState.openRouterApiKey) {
+                    apiKeyModal.classList.remove('hidden'); // Show API modal (now translated)
+                } else {
+                    appWrapper.classList.remove('hidden'); // Show main app
+                    initializeChat();
+                }
+            }
+            
             function renderMessage(sender, text) {
                 const messageEl = document.createElement('div');
                 messageEl.className = `message-bubble ${sender}`;
@@ -179,15 +288,24 @@
                 chatWindow.scrollTop = chatWindow.scrollHeight;
                 return messageEl;
             }
+            
+            function getSystemPrompt() {
+                return Translations[AppState.currentLanguage].system_prompt;
+            }
 
             function initializeChat() {
+                const t = Translations[AppState.currentLanguage];
                 chatWindow.innerHTML = `
                     <div class="message-bubble system">
-                        <p><i class="fa-solid fa-brain mr-2"></i>You are chatting with <strong>Mindful AI</strong>. Ask for advice on digital wellness, managing screen time, or handling online stress.</p>
+                        <p><i class="fa-solid fa-brain mr-2"></i>
+                            <strong data-translate-key="system_message_strong">${t.system_message_strong}</strong>. 
+                            <span data-translate-key="system_message_p">${t.system_message_p}</span>
+                        </p>
                     </div>`;
-                conversationHistory = [{
+                
+                AppState.conversationHistory = [{
                     role: 'system',
-                    content: "You are Mindful-AI, an AI-powered digital health advisory assistant that provides emotional support and objective, accurate information. Your target audience is students experiencing social media distress. Focusing on social media usage time, digital information overload, and potential health risks, you will provide specific, actionable, calm, practical, and encouraging online advice. Please avoid providing medical advice. Keep your responses concise and understandable."
+                    content: getSystemPrompt()
                 }];
             }
 
@@ -197,22 +315,22 @@
                 if (!userMessage) return;
 
                 renderMessage('user', userMessage);
-                conversationHistory.push({ role: 'user', content: userMessage });
+                AppState.conversationHistory.push({ role: 'user', content: userMessage });
                 chatInput.value = '';
                 sendBtn.disabled = true;
 
-                const typingIndicator = renderMessage('ai typing', '...');
+                const typingIndicator = renderMessage('ai typing', Translations[AppState.currentLanguage].typing_message);
 
                 try {
                     const response = await fetch(OPENROUTER_API_URL, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${apiKey}`,
+                            'Authorization': `Bearer ${AppState.openRouterApiKey}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             model: AI_MODEL,
-                            messages: conversationHistory
+                            messages: AppState.conversationHistory
                         })
                     });
 
@@ -225,10 +343,10 @@
                     
                     typingIndicator.textContent = aiMessage;
                     typingIndicator.classList.remove('typing');
-                    conversationHistory.push({ role: 'assistant', content: aiMessage });
+                    AppState.conversationHistory.push({ role: 'assistant', content: aiMessage });
 
                 } catch (error) {
-                    typingIndicator.textContent = 'Sorry, something went wrong. Please check your API key or try again.';
+                    typingIndicator.textContent = Translations[AppState.currentLanguage].error_message;
                     typingIndicator.classList.add('error');
                     console.error('API call failed:', error);
                 } finally {
@@ -241,7 +359,7 @@
                 const key = apiKeyInput.value.trim();
                 if (key) {
                     localStorage.setItem('openRouterApiKey', key);
-                    apiKey = key;
+                    AppState.openRouterApiKey = key;
                     apiKeyModal.classList.add('hidden');
                     appWrapper.classList.remove('hidden');
                     initializeChat();
@@ -249,23 +367,32 @@
             }
 
             // --- INITIALIZATION & EVENT LISTENERS ---
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    if (!apiKey) {
-                        apiKeyModal.classList.remove('hidden');
-                    } else {
-                        appWrapper.classList.remove('hidden');
-                        initializeChat();
-                    }
-                }, 500);
-            }, 1500);
+            function init() {
+                langEnBtn.addEventListener('click', () => setLanguage('en'));
+                langZhBtn.addEventListener('click', () => setLanguage('zh'));
+                changeLangBtn.addEventListener('click', showLanguageSelection);
+                saveKeyBtn.addEventListener('click', saveApiKey);
+                apiKeyInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') saveApiKey(); });
+                chatForm.addEventListener('submit', handleChatSubmit);
+                clearBtn.addEventListener('click', initializeChat);
 
-            saveKeyBtn.addEventListener('click', saveApiKey);
-            apiKeyInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') saveApiKey(); });
-            chatForm.addEventListener('submit', handleChatSubmit);
-            clearBtn.addEventListener('click', initializeChat);
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        const savedLang = localStorage.getItem('userLanguage');
+                        if (savedLang) {
+                            AppState.currentLanguage = savedLang;
+                            translateUI();
+                            checkApiKeyAndProceed();
+                        } else {
+                            languageModal.classList.remove('hidden');
+                        }
+                    }, 500);
+                }, 1500);
+            }
+
+            init();
         });
     </script>
 </body>

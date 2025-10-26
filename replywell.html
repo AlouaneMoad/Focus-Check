@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ReplyWell Simulator</title>
+    <link rel="icon" href="logo.png" type="image/x-icon"/>
+    <link rel="shortcut icon" href="logo.png" type="image/x-icon"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -14,7 +16,7 @@
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --border-primary: #475569;
-            --accent-primary: #84cc16; /* Lime green for a fresh look */
+            --accent-primary: #84cc16; 
             --accent-hover: #65a30d;
         }
 
@@ -29,7 +31,6 @@
             overflow: hidden;
         }
 
-        /* --- NEW: Loading Screen Styles --- */
         #loading-screen { 
             background-image: url('loading.webp');
             background-size: cover;
@@ -334,7 +335,6 @@
                 }
             };
 
-            // --- DOM ELEMENTS ---
             const loadingScreen = document.getElementById('loading-screen');
             const languageModal = document.getElementById('language-modal');
             const appWrapper = document.getElementById('app-wrapper');
@@ -349,7 +349,6 @@
             const practiceAgainBtn = document.getElementById('practice-again-btn');
             const changeLangBtn = document.getElementById('change-lang-btn');
 
-            // --- FUNCTIONS ---
             function translateUI() {
                 const lang = AppState.currentLanguage;
                 const t = Translations[lang];
@@ -454,14 +453,12 @@
                 renderScenario(scenarios[AppState.currentScenarioIndex]);
             }
 
-            // --- EVENT LISTENERS ---
             langEnBtn.addEventListener('click', () => setLanguage('en'));
             langZhBtn.addEventListener('click', () => setLanguage('zh'));
             changeLangBtn.addEventListener('click', showLanguageSelection);
             startBtn.addEventListener('click', startSimulator);
             practiceAgainBtn.addEventListener('click', startSimulator);
             
-            // --- UPDATED: Initialization with Loading Screen ---
             function init() {
                 const savedLang = localStorage.getItem('userLanguage');
                 if (savedLang) {

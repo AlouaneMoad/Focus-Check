@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About & Credits</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-primary: url("background.webp");
+            --bg-secondary: rgba(20, 26, 41, 0.75);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-primary: #475569;
+            --accent-primary: #f59e0b; /* Amber for a warm, final touch */
+        }
+
+        body {
+            background-image: var(--bg-primary);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: "Inter", "Noto Sans SC", sans-serif;
+            color: var(--text-primary);
+        }
+
+        /* NEW: Loading Screen Styles */
+        #loading-screen { 
+            background-image: url('loading.webp');
+            background-size: cover;
+            background-position: center;
+            transition: opacity 0.5s ease;
+        }
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .main-container, .modal-card {
+            background-color: var(--bg-secondary);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-primary);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .exit-btn {
+            display: flex; align-items: center; gap: 0.5rem; background-color: var(--bg-secondary);
+            padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 600;
+            border: 1px solid var(--border-primary); transition: all 0.2s ease-in-out;
+            text-decoration: none; color: var(--text-primary);
+        }
+        .exit-btn:hover { background-color: #334155; transform: scale(1.05); }
+
+        .content-section h2 {
+            font-size: 1.25rem; font-weight: 700; color: var(--accent-primary);
+            margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-primary);
+        }
+        .content-section p, .content-section li { color: var(--text-secondary); line-height: 1.7; }
+        .team-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; align-items: center; }
+        .team-grid strong { color: var(--text-primary); text-align: right; }
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="text-center">
+            <img src="icon.png" alt="Loading Icon" class="w-20 h-20 mx-auto mb-4 animate-bounce">
+            <p class="text-lg font-semibold">Loading About & Credits...</p>
+        </div>
+    </div>
+
+    <header class="absolute top-8 left-8 z-50">
+        <a href="index.html" class="exit-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span data-translate-key="exit_button">Exit</span>
+        </a>
+    </header>
+
+    <div id="language-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div class="modal-card text-center">
+            <h1 class="text-2xl font-bold mb-6">Choose Language / 选择语言</h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="lang-en-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors duration-300">English</button>
+                <button id="lang-zh-btn" class="w-full px-6 py-3 font-semibold text-white rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300">中文 (Chinese)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-wrapper" class="hidden flex-col items-center">
+        <div class="main-container">
+            <div class="text-center mb-8">
+                <img src="logo.png" alt="Digitalease Logo" class="w-20 h-20 mx-auto mb-4">
+                <h1 class="text-3xl font-bold">Digitalease</h1>
+                <p class="text-slate-300" data-translate-key="hub_subtitle"></p>
+            </div>
+            
+            <div class="space-y-8 content-section">
+                <div>
+                    <h2 data-translate-key="about_project_title"></h2>
+                    <p data-translate-key="about_project_desc"></p>
+                </div>
+                <div>
+                    <h2 data-translate-key="team_title"></h2>
+                    <div class="team-grid">
+                        <strong data-translate-key="team_lead"></strong><span>冯靖茹 (Feng Jingru)</span>
+                        <strong data-translate-key="team_members"></strong><span>冯泽祥 (Feng Zexiang), 杨妮 (Yang Ni)</span>
+                        <strong data-translate-key="team_dev"></strong><span>Moad Alouane</span>
+                        <strong data-translate-key="team_supervisors"></strong><span>黄丽 (Huang Li), 代依伶 (Dai Yiling)</span>
+                    </div>
+                </div>
+                <div>
+                    <h2 data-translate-key="project_info_title"></h2>
+                     <div class="team-grid">
+                        <strong data-translate-key="project_uni"></strong><span data-translate-key="project_uni_name"></span>
+                        <strong data-translate-key="project_type"></strong><span data-translate-key="project_type_name"></span>
+                        <strong data-translate-key="project_level"></strong><span data-translate-key="project_level_name"></span>
+                        <strong data-translate-key="project_date"></strong><span>2025-10-25</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center pt-4">
+            <button id="change-lang-btn" class="text-sm text-[var(--accent-primary)] hover:underline" data-translate-key="change_language_button"></button>
+        </footer>
+    </div>
+
+    <script>
+    (function () {
+        const CLICK_SOUND_SRC = 'click.mp3'; 
+        function playClickSound() {
+            try { new Audio(CLICK_SOUND_SRC).play().catch(e => {}); } catch (e) {}
+        }
+        document.body.addEventListener('click', e => {
+            if (e.target.closest('button, a.exit-btn')) playClickSound();
+        });
+    })();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const AppState = { currentLanguage: 'en' };
+
+            const Translations = {
+                en: {
+                    exit_button: "Exit",
+                    hub_subtitle: "Your Digital Wellness Hub",
+                    about_project_title: "About This Project",
+                    about_project_desc: "This hub was created to provide simple, effective tools for building healthier digital habits, based on empirical research into the effects of social media and AI on student well-being.",
+                    team_title: "The Project Team",
+                    team_lead: "Project Lead:",
+                    team_members: "Team Members:",
+                    team_dev: "Developer:",
+                    team_supervisors: "Supervisors:",
+                    project_info_title: "Project Information",
+                    project_uni: "University:",
+                    project_uni_name: "Southwest Petroleum University",
+                    project_type: "Program:",
+                    project_type_name: "Innovation Training Project",
+                    project_level: "Level:",
+                    project_level_name: "Provincial",
+                    project_date: "Completion Date:",
+                    change_language_button: "切换语言 (Switch Language)"
+                },
+                zh: {
+                    exit_button: "出口",
+                    hub_subtitle: "您的数字健康中心",
+                    about_project_title: "关于此项目",
+                    about_project_desc: "该中心旨在基于对社交媒体和AI对学生福祉影响的实证研究，提供简单有效的工具来培养更健康的数字习惯。",
+                    team_title: "项目团队",
+                    team_lead: "负责人:",
+                    team_members: "团队成员:",
+                    team_dev: "开发者:",
+                    team_supervisors: "指导教师:",
+                    project_info_title: "项目信息",
+                    project_uni: "大学:",
+                    project_uni_name: "西南石油大学",
+                    project_type: "项目类型:",
+                    project_type_name: "创新训练项目",
+                    project_level: "级别:",
+                    project_level_name: "省级",
+                    project_date: "结题日期:",
+                    change_language_button: "Switch to English"
+                }
+            };
+            
+            const loadingScreen = document.getElementById('loading-screen'); // NEW
+            const languageModal = document.getElementById('language-modal');
+            const appWrapper = document.getElementById('app-wrapper');
+            const langEnBtn = document.getElementById('lang-en-btn');
+            const langZhBtn = document.getElementById('lang-zh-btn');
+            const changeLangBtn = document.getElementById('change-lang-btn');
+
+            function translateUI() {
+                const lang = AppState.currentLanguage;
+                const t = Translations[lang];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-translate-key]').forEach(el => {
+                    const key = el.dataset.translateKey;
+                    if (t[key]) el.textContent = t[key];
+                });
+            }
+
+            function setLanguage(lang) {
+                AppState.currentLanguage = lang;
+                localStorage.setItem('userLanguage', lang);
+                translateUI();
+                languageModal.classList.add('hidden');
+                appWrapper.classList.remove('hidden');
+            }
+
+            // UPDATED: Initialization Logic
+            function init() {
+                // Event Listeners
+                langEnBtn.addEventListener('click', () => setLanguage('en'));
+                langZhBtn.addEventListener('click', () => setLanguage('zh'));
+                changeLangBtn.addEventListener('click', () => {
+                    appWrapper.classList.add('hidden');
+                    languageModal.classList.remove('hidden');
+                });
+
+                // Loading Sequence
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        const savedLang = localStorage.getItem('userLanguage');
+                        if (savedLang) {
+                            setLanguage(savedLang);
+                        } else {
+                            languageModal.classList.remove('hidden');
+                        }
+                    }, 500); // Corresponds to the CSS transition duration
+                }, 1500); // How long the loading screen is visible
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
